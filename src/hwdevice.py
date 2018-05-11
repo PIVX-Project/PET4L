@@ -183,7 +183,7 @@ class HWdevice(QObject):
         messageText += "PIV amount: <b>%s</b><br>" % str(round(self.amount / 1e8, 8))
         messageText += "plus PIV for fee: <b>%s</b><br><br>" % str(round(int(tx_fee) / 1e8, 8))
         self.mBox2.setText(messageText)
-        self.mBox2.setIconPixmap(caller.tabMain.ledgerImg.scaledToHeight(200, Qt.SmoothTransformation))
+        self.mBox2.setIconPixmap(caller.ledgerImg.scaledToHeight(200, Qt.SmoothTransformation))
         self.mBox2.setWindowTitle("CHECK YOUR LEDGER")
         self.mBox2.setStandardButtons(QMessageBox.NoButton)
         self.mBox2.setMaximumWidth(500)
