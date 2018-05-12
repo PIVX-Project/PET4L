@@ -103,7 +103,7 @@ if os_type == 'win32':
 if os_type == 'linux':
 	os.chdir(base_dir)
 	# Rename dist Dir
-	dist_path_linux = os.path.join(base_dir, 'PET4L-v' + version_str + '-gnu_linux')
+	dist_path_linux = os.path.join(base_dir, 'PET4L-v' + version_str)
 	os.rename(dist_path, dist_path_linux)
 	# Compress dist Dir
 	print('Compressing Linux App Folder')
