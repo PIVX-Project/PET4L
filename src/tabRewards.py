@@ -60,8 +60,8 @@ class TabRewards():
                     self.ui.rewardsList.box.setItem(row, 2, item(txId))
                     self.ui.rewardsList.box.setItem(row, 3, item(str(utxo.get('tx_ouput_n', None))))
                     self.ui.rewardsList.box.showRow(row)   
-                        
-                if len(self.rewards) > 1:
+                     
+                if len(self.rewards) > 0:
                     self.ui.rewardsList.box.resizeColumnsToContents()
                     self.ui.rewardsList.statusLabel.setVisible(False)
                     self.ui.rewardsList.box.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
@@ -102,20 +102,16 @@ class TabRewards():
             
     @pyqtSlot()       
     def loadSelection(self):
-        try:
-            # Check dongle
-            printDbg("Checking HW device")
-            if self.caller.hwStatus != 2:
-                self.caller.myPopUp2(QMessageBox.Critical, 'PET4L - hw device check', "Connect to HW device first")
-                printDbg("Unable to connect - hw status: %d" % self.caller.hwStatus)
-                return None
-                    
-            self.ui.addySelect.clear()
-            
-            ThreadFuns.runInThread(self.loadSelection_thread, ())
-                     
-        except Exception as e:
-            print(e)        
+        # Check dongle
+        printDbg("Checking HW device")
+        if self.caller.hwStatus != 2:
+            self.caller.myPopUp2(QMessageBox.Critical, 'PET4L - hw device check', "Connect to HW device first")
+            printDbg("Unable to connect - hw status: %d" % self.caller.hwStatus)
+            return None
+                
+        self.ui.addySelect.clear()  
+        ThreadFuns.runInThread(self.loadSelection_thread, ())
+    
                         
      
     def loadSelection_thread(self, ctrl): 
