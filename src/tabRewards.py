@@ -71,9 +71,9 @@ class TabRewards():
                         self.ui.rewardsList.statusLabel.setText('<b style="color:purple">PIVX wallet not connected</b>')
                     else:
                         if self.apiConnected:
-                            self.ui.rewardsList.statusLabel.setText('<em style="color:purple">No Unspent Transaction Outputs for %s</em>' % self.curr_addr)
+                            self.ui.rewardsList.statusLabel.setText('<b style="color:red">Found no Rewards for %s</b>' % self.curr_addr)
                         else:
-                            self.ui.rewardsList.statusLabel.setText('<b style="color:red">Unable to connect to API provider</b>')
+                            self.ui.rewardsList.statusLabel.setText('<b style="color:purple">Unable to connect to API provider</b>')
                     self.ui.rewardsList.statusLabel.setVisible(True)
         except Exception as e:
             print(e)
@@ -123,8 +123,16 @@ class TabRewards():
         for i in range(spathFrom, spathTo+1):
             path = "44'/77'/%d'/%d/%d" % (hwAcc, intExt, i)
             address = self.caller.hwdevice.scanForAddress(path)
+            try:
+                balance = self.apiClient.getBalance(address)
+            except Exception as e:
+                print(e)
+                balance = 0
+                
             itemLine = "%s  --  %s" % (path, address)
-            self.ui.addySelect.addItem(itemLine, [path, address])  
+            if(balance):
+                itemLine += "   [%s PIV]" % str(balance)
+            self.ui.addySelect.addItem(itemLine, [path, address, balance])
     
     
     def load_utxos_thread(self, ctrl):
@@ -171,11 +179,9 @@ class TabRewards():
         if self.ui.addySelect.currentIndex() >= 0:
             self.curr_path = self.ui.addySelect.itemData(self.ui.addySelect.currentIndex())[0]
             self.curr_addr = self.ui.addySelect.itemData(self.ui.addySelect.currentIndex())[1]
-            if self.curr_addr is not None:
-                result = self.apiClient.getBalance(self.curr_addr)
-                self.ui.addrAvailLine.setText("<i>%s PIVs</i>" % result)
-            self.ui.selectedRewardsLine.setText("0.0")
-            if result is not None:
+            self.curr_balance = self.ui.addySelect.itemData(self.ui.addySelect.currentIndex())[2]
+
+            if self.curr_balance is not None:
                 self.runInThread = ThreadFuns.runInThread(self.load_utxos_thread, (), self.display_utxos)
       
         
