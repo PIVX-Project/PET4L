@@ -71,7 +71,7 @@ class TabRewards():
                         self.ui.rewardsList.statusLabel.setText('<b style="color:purple">PIVX wallet not connected</b>')
                     else:
                         if self.apiConnected:
-                            self.ui.rewardsList.statusLabel.setText('<em style="color:purple">Found no Transactions for %s</em>' % self.curr_addr)
+                            self.ui.rewardsList.statusLabel.setText('<em style="color:purple">No Unspent Transaction Outputs for %s</em>' % self.curr_addr)
                         else:
                             self.ui.rewardsList.statusLabel.setText('<b style="color:red">Unable to connect to API provider</b>')
                     self.ui.rewardsList.statusLabel.setVisible(True)
