@@ -58,6 +58,7 @@ Click the button `Connect` next to "HW device" to connect to the hardware device
 Once successfully connected, it gives a confirmation message and the led turns purple.
 <br>![03](doc/img/03.png)<br>
 
+## Usage
 #### Loading Addresses And UTXOs
 Adjust the fields as needed:
 - <b>Account HW</b> : insert the account number you wish to recover funds from (default: 0)
@@ -83,7 +84,8 @@ Verify the details of the TX both on screen and on the display of the Nano S.
 If everything checks out, click yes on the device.
 <br>![07](doc/img/07.png)<br>
 <br>
-The transaction is now assembled and signed. Pet4l asks one more time to check the details before broadcasting the transaction (thus spending the selected UTXOs).
+The transaction is now assembled and signed.<br>
+Pet4l asks one more time to check the details before broadcasting the transaction (thus spending the selected UTXOs).
 <br>![08](doc/img/08.png)<br>
 <br>
 Click `Yes` to finally broadcast the transaction to the PIVX network.
