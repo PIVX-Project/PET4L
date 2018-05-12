@@ -54,7 +54,7 @@ Adjust the fields as needed:
 - <b>spath to</b> : insert the n. of the last address to search (default: 10)
 - <b>internal/external</b> : insert 0 for normal addresses and 1 for change addresses (default: 0)
 
-<br>
+
 Click on `Scan Ledger Device` to retrieve the addresses and load the UTXOs
 <br>![04](doc/img/04.png)
 <br>
