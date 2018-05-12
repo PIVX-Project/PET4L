@@ -34,7 +34,8 @@ Configure the RPC server by clicking on the menu
 <br>![00](doc/img/00.png)<br>
 
 and inserting the same data.
-You can leave ip `127.0.0.1` if the wallet is on the same machine as the pet4l. Otherwise set the ip of the machine running the Core PIVX wallet.
+You can leave ip `127.0.0.1` if the wallet is on the same machine as the pet4l.<br>
+Otherwise set the IP address of the machine running the Core PIVX wallet.
 <br>![01](doc/img/01.png)<br>
 
 #### Connecting
