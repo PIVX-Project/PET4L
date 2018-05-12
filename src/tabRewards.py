@@ -112,21 +112,23 @@ class TabRewards():
                     
             self.ui.addySelect.clear()
             
-            hwAcc = self.ui.edt_hwAccount.value()
-            spathFrom = self.ui.edt_spathFrom.value()
-            spathTo = self.ui.edt_spathTo.value()
-            intExt = self.ui.edt_internalExternal.value()
-            
-            for i in range(spathFrom, spathTo+1):
-                path = "44'/77'/%d'/%d/%d" % (hwAcc, intExt, i)
-                address = self.caller.hwdevice.scanForAddress(path)
-                itemLine = "%s  --  %s" % (path, address)
-                self.ui.addySelect.addItem(itemLine, [path, address])
-                    
+            ThreadFuns.runInThread(self.loadSelection_thread, ())
+                     
         except Exception as e:
             print(e)        
                         
-           
+     
+    def loadSelection_thread(self, ctrl): 
+        hwAcc = self.ui.edt_hwAccount.value()
+        spathFrom = self.ui.edt_spathFrom.value()
+        spathTo = self.ui.edt_spathTo.value()
+        intExt = self.ui.edt_internalExternal.value()
+        
+        for i in range(spathFrom, spathTo+1):
+            path = "44'/77'/%d'/%d/%d" % (hwAcc, intExt, i)
+            address = self.caller.hwdevice.scanForAddress(path)
+            itemLine = "%s  --  %s" % (path, address)
+            self.ui.addySelect.addItem(itemLine, [path, address])  
     
     
     def load_utxos_thread(self, ctrl):
