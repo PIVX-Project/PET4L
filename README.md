@@ -1,6 +1,16 @@
 # PET4L
 PET4L [PIVX Emergency Tool For Ledger] is a tool to spend PIVs that are "trapped inside" the Ledger Nano S when Ledger Wallet Chrome App acts crazy.
 
+How does it work?
+
+1) it fetches addresses from the device
+2) asks to the block explorer the UTXOs related to each addy
+3) it creates the raw TX and signs the new inputs with Ledger device
+4) finally uses the `sendrawtransaction` RPC call of the Core wallet to broadcast the TX.
+
+
+<b>NOTE:</b> In the current implementation, utxo data is pulled from the BE (https://chainz.cryptoid.info/pivx/). Check that this block explorer is online and properly works before using the tool.
+
 ## Installation
 This application does not require installation.<br>
 If you are using a binary version, just unzip the folder anywhere you like and use the executable to start the application:
