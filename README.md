@@ -4,8 +4,8 @@ PET4L [PIVX Emergency Tool For Ledger] is a tool to spend PIVs that are "trapped
 How does it work?
 
 1) it fetches addresses from the device
-2) asks to the block explorer the UTXOs related to each addy
-3) it creates the raw TX and signs the new inputs with Ledger device
+2) asks to the block explorer the UTXOs related to each address
+3) it creates the raw TX and signs the new inputs on the Nano S device
 4) finally uses the `sendrawtransaction` RPC call of the Core wallet to broadcast the TX.
 
 
@@ -48,11 +48,11 @@ You can leave ip `127.0.0.1` if the wallet is on the same machine as the pet4l.<
 Otherwise set the IP address of the machine running the Core PIVX wallet.
 <br>![01](doc/img/01.png)<br>
 
-#### Connecting
+#### Connections
 If the IP and the credentials of the PIVX wallet are correct, it should connect with pet4l instantly.<br>
-Otherwise use the `Connect` button next to "PIVX wallet".<br>
+Otherwise use the `Connect` button next to "PIVX server: Local Wallet".<br>
 Connect the hardware device to USB and open the PIVX-App on it.<br>
-Click the button `Connect` next to "HW device" to connect to the hardware device.
+Click the button `Connect` next to "HW device: Ledger Nano S" to connect to the hardware device.
 <br>![02](doc/img/02.png)<br>
 
 Once successfully connected, it gives a confirmation message and the led turns purple.
@@ -73,7 +73,7 @@ Click on `Scan Ledger Device` to retrieve the addresses and load the UTXOs
 Open the menu to select an address and check related UTXOs
 <br>![05](doc/img/05.png)<br>
 
-#### Spend UTXOs
+#### Spending UTXOs
 Once loaded, select those UTXOs you wish to spend.<br>
 Insert the destination address.<br>
 Check the suggested fee and adjust as preferred.<br>
@@ -81,7 +81,7 @@ Then click on `Send`
 <br>![06](doc/img/06.png)<br>
 <br>
 Verify the details of the TX both on screen and on the display of the Nano S.
-If everything checks out, click yes on the device.
+If everything checks out, click "yes" (right button) on the device.
 <br>![07](doc/img/07.png)<br>
 <br>
 The transaction is now assembled and signed.<br>
