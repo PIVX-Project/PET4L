@@ -142,21 +142,6 @@ def splitString(text, n):
     arr = [text[i:i+n] for i in range(0, len(text), n)]
     return '\n'.join(arr)
     
- 
- 
-def readMNfile():
-    try:
-        import simplejson as json
-        mn_file = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), 'masternodes.json')
-        with open(mn_file) as data_file:
-            mnList = json.load(data_file)    
-        data_file.close()
-    except Exception as e:
-        printException(getCallerName(), getFunctionName(), "error reading MN file", e.args)
-        return []
-    
-    return mnList
 
 
 
@@ -190,36 +175,6 @@ def sec_to_time(seconds):
     seconds -= mins*60   
     return "{} days, {} hrs, {} mins, {} secs".format(days, hrs, mins, seconds)
 
-
-
-def updateSplash(label, i):
-    if i==10:
-        progressText = "loading masternode conf..."
-        label.setText(progressText)
-    elif i==30:
-        progressText = "drawing GUI..."
-        label.setText(progressText)
-    elif i==59:
-        progressText = "releasing the watchdogs..."
-        label.setText(progressText)
-    elif i==89:
-        progressText = "Enjoy the Purple Power!"
-        label.setText(progressText)   
-    elif i==99:
-        time.sleep(0.4)
-
-
-
-def writeMNfile(mnList):
-    try:
-        import simplejson as json
-        mn_file = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)), 'masternodes.json')
-        with open(mn_file, 'w+') as data_file:
-            json.dump(mnList, data_file)        
-        data_file.close()
-    except Exception as e:
-        printException(getCallerName(), getFunctionName(), "error writing MN file", e.args)
         
     
 

@@ -203,7 +203,7 @@ class TabRewards():
     @pyqtSlot()
     def onSendRewards(self):
         self.dest_addr = self.ui.destinationLine.text().strip()
-        printDbg("Sending rewards from masternode address %s to PIVX address %s" % (self.curr_addr, self.dest_addr))      
+        printDbg("Sending from PIVX address <b>%s</b> to PIVX address <b>%s</b>" % (self.curr_addr, self.dest_addr))      
     
         # Check dongle
         printDbg("Checking HW device")
