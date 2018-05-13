@@ -13,7 +13,7 @@ How does it work?
 
 ## Installation
 This application does not require installation.<br>
-If you are using a binary version, just unzip the folder anywhere you like and use the executable to start the application:
+If you are using a [binary version](https://github.com/PIVX-Project/PET4L/releases), just unzip the folder anywhere you like and use the executable to start the application:
 - *Linux*: double-click `pet4l` file inside the `app` directory
 - *Windows*: double-click `pet4l.exe` file inside the `app` directory
 - *Mac OsX*: double-click `pet4l.app` application folder
