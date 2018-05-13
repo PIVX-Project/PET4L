@@ -203,7 +203,7 @@ class TabRewards():
     @pyqtSlot()
     def onSendRewards(self):
         self.dest_addr = self.ui.destinationLine.text().strip()
-        printDbg("Sending from PIVX address <b>%s</b> to PIVX address <b>%s</b>" % (self.curr_addr, self.dest_addr))      
+        printDbg("Sending from PIVX address  %s  to PIVX address  %s " % (self.curr_addr, self.dest_addr))      
     
         # Check dongle
         printDbg("Checking HW device")
@@ -250,7 +250,7 @@ class TabRewards():
                     self.caller.myPopUp2(QMessageBox.Warning, 'transaction Warning', mess)
                 
                 else:
-                    message = 'Broadcast signed transaction?<br><br>Destination address:<br><b>%s</b><br><br>' % (self.curr_addr)
+                    message = 'Broadcast signed transaction?<br><br>Destination address:<br><b>%s</b><br><br>' % (self.dest_addr)
                     message += 'Amount to send: <b>%s PIV</b><br>' % amount_to_send
                     message += 'Fee: <b>%s PIV</b><br>Size: <b>%d bytes</b>' % (str(round(self.currFee / 1e8, 8) ), len(tx_hex)/2)
                     reply = self.caller.myPopUp(QMessageBox.Information, 'Send transaction', message)
@@ -259,11 +259,11 @@ class TabRewards():
                         mess = QMessageBox(QMessageBox.Information, 'transaction Sent', 'transaction Sent')
                         mess.setDetailedText(txid)
                         mess.exec_()
-                        self.onCancel()
                         
                     else:
                         self.caller.myPopUp2(QMessageBox.Information, 'transaction NOT Sent', "transaction NOT sent")
-                        self.onCancel()
+                        
+                    self.onCancel()
                         
             except Exception as e:
                 err_msg = "Exception in sendRewards"
