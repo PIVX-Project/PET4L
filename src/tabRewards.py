@@ -202,8 +202,7 @@ class TabRewards():
             
     @pyqtSlot()
     def onSendRewards(self):
-        self.dest_addr = self.ui.destinationLine.text().strip()
-        printDbg("Sending from PIVX address  %s  to PIVX address  %s " % (self.curr_addr, self.dest_addr))      
+        self.dest_addr = self.ui.destinationLine.text().strip()     
     
         # Check dongle
         printDbg("Checking HW device")
@@ -218,7 +217,8 @@ class TabRewards():
             return None
         
                     
-        # LET'S GO    
+        # LET'S GO
+        printDbg("Sending from PIVX address  %s  to PIVX address  %s " % (self.curr_addr, self.dest_addr))
         if self.selectedRewards:                      
             self.currFee = self.ui.feeLine.value() * 1e8
             # connect signal
