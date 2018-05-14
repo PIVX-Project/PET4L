@@ -23,16 +23,16 @@ class ConfigureRPCserver_dlg(QDialog):
         
     def initUI(self):
         self.ui = Ui_ConfigureRPCserverDlg()
-        self.ui.setupUi(self)
+        self.ui.setupUi(self, self.main_wnd)
         
         
     def loadRPCfile(self):
-        self.rpc_ip, self.rpc_port, self.rpc_user, self.rpc_password = readRPCfile()     
+        self.rpc_ip, self.rpc_port, self.rpc_user, self.rpc_password = readRPCfile()  
         
    
 
 class Ui_ConfigureRPCserverDlg(object):
-    def setupUi(self, ConfigureRPCserverDlg):
+    def setupUi(self, ConfigureRPCserverDlg, main_wnd):
         ConfigureRPCserverDlg.setModal(True)
         ## -- Layout
         self.layout = QGroupBox(ConfigureRPCserverDlg)
