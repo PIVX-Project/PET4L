@@ -1,41 +1,36 @@
 # -*- mode: python -*-
 import sys
-import os
-import os.path
+import os.path as os_path
 import simplejson as json
 
 os_type = sys.platform
 block_cipher = None
-base_dir = os.path.dirname(os.path.realpath('__file__'))
+base_dir = os_path.dirname(os_path.realpath('__file__'))
+
+def libModule(module, source, dest):
+	m = __import__(module)
+	module_path = os_path.dirname(m.__file__)
+	del m
+	print("libModule %s" % str(( os_path.join(module_path, source), dest )))
+	return ( os_path.join(module_path, source), dest )
 
 # look for version string
 version_str = ''
-with open(os.path.join(base_dir, 'src', 'version.txt')) as version_file:
+with open(os_path.join(base_dir, 'src', 'version.txt')) as version_file:
 	version_data = json.load(version_file)
 version_file.close()
 version_str = version_data["number"] + version_data["tag"]
 
 add_files = [('src/version.txt', '.'), ('img', 'img')]
+add_files.append( libModule('bitcoin', 'english.txt','bitcoin') )
 
-lib_path = next(p for p in sys.path if 'site-packages' in p)
 if os_type == 'win32':
-    qt5_path = os.path.join(lib_path, 'PyQt5\\Qt\\bin')
-    sys.path.append(qt5_path)
-    # add file vcruntime140.dll manually, due to not including by pyinstaller
-    found = False
-    for p in os.environ["PATH"].split(os.pathsep):
-        file_name = os.path.join(p, "vcruntime140.dll")
-        if os.path.exists(file_name):
-            found = True
-            add_files.append((file_name, ''))
-            print('Adding file ' + file_name)
-            break
-    if not found:
-        raise Exception('File vcruntime140.dll not found in the system path.')
-	
-# add bitcoin library data file
-add_files.append( (os.path.join(lib_path, 'bitcoin/english.txt'),'bitcoin') )
-	
+    import ctypes.util
+    l = ctypes.util.find_library('libusb-1.0.dll')
+    if l:
+       add_files.append( (l, '.') )
+
+
 a = Analysis(['pet4l.py'],
              pathex=[base_dir, 'src', 'src/qt'],
              binaries=[],
@@ -43,7 +38,37 @@ a = Analysis(['pet4l.py'],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
-             excludes=[],
+             excludes=[ 'numpy',
+                        'cryptography',
+                        'lib2to3',
+                        'pkg_resources',
+                        'distutils',
+                        'Crypto',
+                        'pyi_rth_qt5',
+                        'pytest',
+                        'scipy',
+                        'pycparser',
+                        'pydoc',
+                        'PyQt5.QtHelp',
+                        'PyQt5.QtMultimedia',
+                        'PyQt5.QtNetwork',
+                        'PyQt5.QtOpenGL',
+                        'PyQt5.QtPrintSupport',
+                        'PyQt5.QtQml',
+                        'PyQt5.QtQuick',
+                        'PyQt5.QtQuickWidgets',
+                        'PyQt5.QtSensors',
+                        'PyQt5.QtSerialPort',
+                        'PyQt5.QtSql',
+                        'PyQt5.QtSvg',
+                        'PyQt5.QtTest',
+                        'PyQt5.QtWebEngine',
+                        'PyQt5.QtWebEngineCore',
+                        'PyQt5.QtWebEngineWidgets',
+                        'PyQt5.QtXml',
+                        'win32com',
+                        'xml.dom.domreg',
+                        ],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher)
@@ -54,12 +79,12 @@ pyz = PYZ(a.pure, a.zipped_data,
 exe = EXE(pyz,
           a.scripts,
           exclude_binaries=True,
-          name='pet4l',
+          name='PET4L',
           debug=False,
           strip=False,
-          upx=True,
+          upx=False,
           console=False,
-          icon=os.path.join(base_dir, 'img', 'spmt.%s' % ('icns' if os_type=='darwin' else 'ico')) )
+          icon=os_path.join(base_dir, 'img', 'spmt.%s' % ('icns' if os_type=='darwin' else 'ico')) )
 
 coll = COLLECT(exe,
                a.binaries,
@@ -71,50 +96,50 @@ coll = COLLECT(exe,
 
 if os_type == 'darwin':
 	app = BUNDLE(coll,
-             name='pet4l.app',
-             icon=os.path.join(base_dir, 'img', 'spmt.icns'),
+             name='PET4L.app',
+             icon=os_path.join(base_dir, 'img', 'spmt.icns'),
              bundle_identifier=None,
              info_plist={'NSHighResolutionCapable': 'True'})
-             
-   
+
+
 # Prepare bundles
-dist_path = os.path.join(base_dir, 'dist')
-app_path = os.path.join(dist_path, 'app')
+dist_path = os_path.join(base_dir, 'dist')
+app_path = os_path.join(dist_path, 'app')
 os.chdir(dist_path)
 
 # Copy Readme Files
-from shutil import copyfile
+from shutil import copyfile, copytree
 print('Copying README.md')
-copyfile(os.path.join(base_dir, 'README.md'), 'README.md')
-
+copyfile(os_path.join(base_dir, 'README.md'), 'README.md')
+copytree(os_path.join(base_dir, 'docs'), 'docs')
 
 if os_type == 'win32':
 	# Copy Qt5 Platforms
 	os.system('xcopy app\PyQt5\Qt\plugins\platforms app\platforms\ /i')
 	os.chdir(base_dir)
 	# Rename dist Dir
-	dist_path_win = os.path.join(base_dir, 'PET4L-v' + version_str + '-Win64')
+	dist_path_win = os_path.join(base_dir, 'PET4L-v' + version_str + '-Win64')
 	os.rename(dist_path, dist_path_win)
 	# Compress dist Dir
 	print('Compressing Windows App Folder')
 	os.system('"C:\\Program Files\\7-Zip\\7z.exe" a %s %s -mx0' % (dist_path_win + '.zip', dist_path_win))
-	
-	
+
+
 if os_type == 'linux':
 	os.chdir(base_dir)
 	# Rename dist Dir
-	dist_path_linux = os.path.join(base_dir, 'PET4L-v' + version_str)
+	dist_path_linux = os_path.join(base_dir, 'PET4L-v' + version_str + '-gnu_linux')
 	os.rename(dist_path, dist_path_linux)
 	# Compress dist Dir
 	print('Compressing Linux App Folder')
-	os.system('tar -zcvf %s -C %s %s' % ('PET4L-v' + version_str + '-x86_64-gnu_linux.tar.gz', 
-                base_dir, 'PET4L-v' + version_str))
+	os.system('tar -zcvf %s -C %s %s' % ('PET4L-v' + version_str + '-x86_64-gnu_linux.tar.gz',
+                base_dir, 'PET4L-v' + version_str + '-gnu_linux'))
 
 
 if os_type == 'darwin':
     os.chdir(base_dir)
     # Rename dist Dir
-    dist_path_mac = os.path.join(base_dir, 'PET4L-v' + version_str + '-MacOSX')
+    dist_path_mac = os_path.join(base_dir, 'PET4L-v' + version_str + '-MacOSX')
     os.rename(dist_path, dist_path_mac)
     # Remove 'app' folder
     print("Removin 'app' folder")
@@ -126,4 +151,4 @@ if os_type == 'darwin':
     os.system('tar -zcvf %s -C %s %s' % ('PET4L-v' + version_str + '-MacOSX.tar.gz',
                 base_dir, 'PET4L-v' + version_str + '-MacOSX'))
 
-    
+

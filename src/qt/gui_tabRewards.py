@@ -6,25 +6,25 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 from PyQt5.QtCore import Qt
 from PyQt5.Qt import QLabel, QFormLayout, QDoubleSpinBox, QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QSpinBox
 from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QGroupBox, QVBoxLayout
-from PyQt5.QtWidgets import QLineEdit, QComboBox
+from PyQt5.QtWidgets import QLineEdit, QComboBox, QCheckBox, QProgressBar
 
 class TabRewards_gui(QWidget):
-    def __init__(self, *args, **kwargs):
-        QWidget.__init__(self)      
-        self.initRewardsForm()    
-        mainVertical = QVBoxLayout()        
+    def __init__(self, imgDir, *args, **kwargs):
+        QWidget.__init__(self)
+        self.imgDir = imgDir
+        self.initRewardsForm()
+        mainVertical = QVBoxLayout()
         mainVertical.addWidget(self.rewardsForm)
         buttonbox = QHBoxLayout()
         buttonbox.addStretch(1)
         buttonbox.addWidget(self.btn_Cancel)
         mainVertical.addLayout(buttonbox)
-        self.setLayout(mainVertical)     
-        
-        
-        
-        
+        self.setLayout(mainVertical)
+
+
+
+
     def initRewardsForm(self):
-        self.collateralHidden = True
         self.rewardsForm = QGroupBox()
         self.rewardsForm.setTitle("Transfer UTXOs")
         layout = QFormLayout()
@@ -37,7 +37,7 @@ class TabRewards_gui(QWidget):
         self.edt_hwAccount = QSpinBox()
         self.edt_hwAccount.setFixedWidth(50)
         self.edt_hwAccount.setToolTip("account number of the hardware wallet.\nIf unsure put 0")
-        self.edt_hwAccount.setValue(0)  
+        self.edt_hwAccount.setValue(0)
         line1.addWidget(self.edt_hwAccount)
         line1.addWidget(QLabel("spath from"))
         self.edt_spathFrom = QSpinBox()
@@ -63,15 +63,14 @@ class TabRewards_gui(QWidget):
         self.btn_reload.setToolTip("Reload data from ledger device")
         line1.addWidget(self.btn_reload)
         layout.addRow(line1)
-        
         hBox = QHBoxLayout()
         self.addySelect = QComboBox()
-        self.addySelect.setToolTip("Select Address") 
+        self.addySelect.setToolTip("Select Address")
         hBox.addWidget(self.addySelect)
         layout.addRow(hBox)
         ## --- ROW 2: UTXOs
         self.rewardsList = QVBoxLayout()
-        self.rewardsList.statusLabel = QLabel('<b style="color:purple">Checking explorer...</b>')
+        self.rewardsList.statusLabel = QLabel('<b style="color:red">Reload Rewards</b>')
         self.rewardsList.statusLabel.setVisible(True)
         self.rewardsList.addWidget(self.rewardsList.statusLabel)
         self.rewardsList.box = QTableWidget()
@@ -101,7 +100,7 @@ class TabRewards_gui(QWidget):
         item.setText("TX Output N")
         item.setTextAlignment(Qt.AlignCenter)
         self.rewardsList.box.setHorizontalHeaderItem(3, item)
-        item = QTableWidgetItem()        
+        item = QTableWidgetItem()
         self.rewardsList.addWidget(self.rewardsList.box)
         layout.addRow(self.rewardsList)
         ##--- ROW 3
@@ -117,8 +116,12 @@ class TabRewards_gui(QWidget):
         self.selectedRewardsLine.setMinimumWidth(200)
         self.selectedRewardsLine.setStyleSheet("color: purple")
         self.selectedRewardsLine.setToolTip("PIVX to move away")
-        hBox2.addWidget(self.selectedRewardsLine)    
+        hBox2.addWidget(self.selectedRewardsLine)
         hBox2.addStretch(1)
+        self.swiftxCheck = QCheckBox()
+        self.swiftxCheck.setToolTip("check for SwiftX instant transaction (flat fee rate of 0.01 PIV)")
+        hBox2.addWidget(QLabel("Use SwiftX"))
+        hBox2.addWidget(self.swiftxCheck)
         layout.addRow(hBox2)
         ##--- ROW 4
         hBox3 = QHBoxLayout()
@@ -136,7 +139,27 @@ class TabRewards_gui(QWidget):
         self.btn_sendRewards = QPushButton("Send")
         hBox3.addWidget(self.btn_sendRewards)
         layout.addRow(QLabel("Destination Address"), hBox3)
-        #--- Set Layout    
+        hBox4 = QHBoxLayout()
+        hBox4.addStretch(1)
+        self.loadingLine = QLabel("<b style='color:red'>Preparing TX.</b> Completed: ")
+        self.loadingLinePercent = QProgressBar()
+        self.loadingLinePercent.setMaximumWidth(200)
+        self.loadingLinePercent.setMaximumHeight(10)
+        self.loadingLinePercent.setRange(0, 100)
+        hBox4.addWidget(self.loadingLine)
+        hBox4.addWidget(self.loadingLinePercent)
+        self.loadingLine.hide()
+        self.loadingLinePercent.hide()
+        layout.addRow(hBox4)
+        #--- Set Layout
         self.rewardsForm.setLayout(layout)
         #--- ROW 5
         self.btn_Cancel = QPushButton("Clear")
+
+
+    def resetStatusLabel(self, message=None):
+        if message is None:
+            self.rewardsList.statusLabel.setText('<em><b style="color:purple">Checking explorer...</b></em>')
+        else:
+            self.rewardsList.statusLabel.setText(message)
+        self.rewardsList.statusLabel.setVisible(True)

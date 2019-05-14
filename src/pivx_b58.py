@@ -1,8 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-import sys
-import os
-import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '.'))
 
 __b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
 __b58base = len(__b58chars)
@@ -14,7 +11,8 @@ _bord = lambda x: x
 
 
 def b58encode(v):
-    """ encode v, which is a string of bytes, to base58.
+    """
+    encode v, which is a string of bytes, to base58.
     """
     long_value = 0
     for (i, c) in enumerate(v[::-1]):

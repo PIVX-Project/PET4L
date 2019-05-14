@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import sys
-import os.path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+import os
+
 from PyQt5.QtCore import Qt
-from PyQt5.Qt import QLabel, QGridLayout, QHBoxLayout, QComboBox, QWidget
-from PyQt5.QtWidgets import QPushButton
-from PyQt5.QtGui import QPixmap, QFont
+from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QPushButton, QLabel, QGridLayout, QHBoxLayout, QComboBox, QWidget
+
+from constants import HW_devices
+from PyQt5.Qt import QSizePolicy
 
 class GuiHeader(QWidget):
     def __init__(self, caller, *args, **kwargs):
         QWidget.__init__(self)
-        myFont = QFont("Times", italic=True)
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         # --- 1) Check Box
@@ -21,34 +21,47 @@ class GuiHeader(QWidget):
         label1 = QLabel("PIVX server")
         self.centralBox.addWidget(label1, 0, 0)
         self.rpcClientsBox = QComboBox()
-        self.rpcClientsBox.setToolTip("Select RPC server.\nLocal must be configured.")
-        rpcClients = ["Local Wallet"]
-        self.rpcClientsBox.addItems(rpcClients)
+        self.rpcClientsBox.setToolTip("Select RPC server.")
         self.centralBox.addWidget(self.rpcClientsBox, 0, 1)
-        self.button_checkRpc = QPushButton("Connect")
+        self.button_checkRpc = QPushButton("Connect/Update")
         self.button_checkRpc.setToolTip("try to connect to RPC server")
-        self.button_checkRpc.clicked.connect(caller.onCheckRpc)
         self.centralBox.addWidget(self.button_checkRpc, 0, 2)
         self.rpcLed = QLabel()
-        self.rpcLed.setToolTip("status: %s" % caller.rpcStatusMess)
+        self.rpcLed.setToolTip("%s" % caller.rpcStatusMess)
         self.rpcLed.setPixmap(caller.ledGrayH_icon)
         self.centralBox.addWidget(self.rpcLed, 0, 3)
-        label2 = QLabel("Last Ping Block:")
-        self.centralBox.addWidget(label2, 0, 4)
+        self.lastPingBox = QWidget()
+        sp_retain = QSizePolicy()
+        sp_retain.setRetainSizeWhenHidden(True)
+        self.lastPingBox.setSizePolicy(sp_retain)
+        self.lastPingBox.setContentsMargins(0, 0, 0, 0)
+        lastPingBoxLayout = QHBoxLayout()
+        self.lastPingIcon = QLabel()
+        self.lastPingIcon.setToolTip("Last ping server response time.\n(The lower, the better)")
+        self.lastPingIcon.setPixmap(caller.connRed_icon)
+        lastPingBoxLayout.addWidget(self.lastPingIcon)
+        self.responseTimeLabel = QLabel()
+        self.responseTimeLabel.setToolTip("Last ping server response time.\n(The lower, the better)")
+        lastPingBoxLayout.addWidget(self.responseTimeLabel)
+        lastPingBoxLayout.addSpacing(10)
+        self.lastBlockIcon = QLabel()
+        self.lastBlockIcon.setToolTip("Last ping block number")
+        self.lastBlockIcon.setPixmap(caller.lastBlock_icon)
+        lastPingBoxLayout.addWidget(self.lastBlockIcon)
         self.lastBlockLabel = QLabel()
-        self.lastBlockLabel.setFont(myFont)
-        self.centralBox.addWidget(self.lastBlockLabel, 0, 5)
+        self.lastBlockLabel.setToolTip("Last ping block number")
+        lastPingBoxLayout.addWidget(self.lastBlockLabel)
+        self.lastPingBox.setLayout(lastPingBoxLayout)
+        self.centralBox.addWidget(self.lastPingBox, 0, 4)
         # -- 1b) Select & Check hardware
-        label3 = QLabel("HW device")
+        label3 = QLabel("Hardware Device")
         self.centralBox.addWidget(label3, 1, 0)
         self.hwDevices = QComboBox()
         self.hwDevices.setToolTip("Select hardware device")
-        hwDevices = ["Ledger Nano S"]
-        self.hwDevices.addItems(hwDevices)
-        self.centralBox.addWidget(self.hwDevices, 1, 1) 
+        self.hwDevices.addItems([x[0] for x in HW_devices])
+        self.centralBox.addWidget(self.hwDevices, 1, 1)
         self.button_checkHw = QPushButton("Connect")
         self.button_checkHw.setToolTip("try to connect to Hardware Wallet")
-        self.button_checkHw.clicked.connect(caller.onCheckHw) 
         self.centralBox.addWidget(self.button_checkHw, 1, 2)
         self.hwLed = QLabel()
         self.hwLed.setToolTip("status: %s" % caller.hwStatusMess)

@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import sys
-import os.path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+import logging
+import os
 import signal
-from misc import getVersion, printDbg
-from constants import starting_height, starting_width, user_dir
-from PyQt5.Qt import QMainWindow, QIcon, QAction
+import sys
+
+from PyQt5.QtCore import pyqtSignal, QSettings
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog
+
+from database import Database
+from misc import printDbg, initLogs, saveCacheSettings, readCacheSettings, getVersion
 from mainWindow import MainWindow
-from qt.dlg_configureRPCserver import ConfigureRPCserver_dlg
+from constants import user_dir
+from qt.dlg_configureRPCservers import ConfigureRPCservers_dlg
 
 class ServiceExit(Exception):
     """
@@ -16,8 +21,8 @@ class ServiceExit(Exception):
     of all running threads and the main program.
     """
     pass
- 
- 
+
+
 def service_shutdown(signum, frame):
     print('Caught signal %d' % signum)
     raise ServiceExit
@@ -25,34 +30,58 @@ def service_shutdown(signum, frame):
 
 
 class App(QMainWindow):
- 
-    def __init__(self, imgDir):
-        super().__init__()
-        # Register the signal handlers
-        signal.signal(signal.SIGTERM, service_shutdown)
-        signal.signal(signal.SIGINT, service_shutdown)
-        # Get version and title
-        self.version = getVersion()
-        self.title = 'PET4L - PIVX Emergency Tool For Ledger - v.%s-%s' % (self.version['number'], self.version['tag'])
+    # Signal emitted from database
+    sig_changed_rpcServers = pyqtSignal()
+
+    def __init__(self, imgDir, start_args):
         # Create the userdir if it doesn't exist
         if not os.path.exists(user_dir):
             os.makedirs(user_dir)
+
+        # Initialize Logs
+        initLogs()
+        super().__init__()
+
+        # Register the signal handlers
+        signal.signal(signal.SIGTERM, service_shutdown)
+        signal.signal(signal.SIGINT, service_shutdown)
+
+        # Get version and title
+        self.version = getVersion()
+        self.title = 'PET4L - PIVX Emergency Tool For Ledger - v.%s-%s' % (self.version['number'], self.version['tag'])
+
+        # Open database
+        self.db = Database(self)
+        self.db.open()
+
+        # Check for startup args (clear data)
+        if start_args.clearAppData:
+            settings = QSettings('PIVX', 'PET4L')
+            settings.clear()
+
+        # Clear DB
+        self.db.clearTable('UTXOS')
+
+        # Read cached app data
+        self.cache = readCacheSettings()
+
         # Initialize user interface
         self.initUI(imgDir)
-        
- 
+
+
     def initUI(self, imgDir):
         # Set title and geometry
         self.setWindowTitle(self.title)
-        self.resize(starting_width, starting_height)
-        # Set Icon
-        spmtIcon_file = os.path.join(imgDir, 'spmtLogo_shield.png')
-        self.spmtIcon = QIcon(spmtIcon_file)
+        self.resize(self.cache.get("window_width"), self.cache.get("window_height"))
+        # Set Icons
+        self.spmtIcon = QIcon(os.path.join(imgDir, 'spmtLogo_shield.png'))
+        self.pivx_icon = QIcon(os.path.join(imgDir, 'icon_pivx.png'))
+        self.script_icon = QIcon(os.path.join(imgDir, 'icon_script.png'))
         self.setWindowIcon(self.spmtIcon)
         # Add RPC server menu
         mainMenu = self.menuBar()
         confMenu = mainMenu.addMenu('Setup')
-        self.rpcConfMenu = QAction(self.spmtIcon, 'Local RPC Server...', self)
+        self.rpcConfMenu = QAction(self.pivx_icon, 'RPC Servers config...', self)
         self.rpcConfMenu.triggered.connect(self.onEditRPCServer)
         confMenu.addAction(self.rpcConfMenu)
         # Create main window
@@ -61,30 +90,43 @@ class App(QMainWindow):
         # Show
         self.show()
         self.activateWindow()
-        
-        
-        
-        
+
+
+
     def closeEvent(self, *args, **kwargs):
+        # Restore output stream
         sys.stdout = sys.__stdout__
-        sys.stderr = sys.__stderr__
         # Terminate the running threads.
         # Set the shutdown flag on each thread to trigger a clean shutdown of each thread.
         self.mainWindow.myRpcWd.shutdown_flag.set()
-        print("Saving stuff & closing...")
-        if getattr(self.mainWindow.hwdevice, 'dongle', None) is not None:
-            self.mainWindow.hwdevice.dongle.close()
-            print("Dongle closed")
+        logging.debug("Saving stuff & closing...")
+        try:
+            self.mainWindow.hwdevice.clearDevice()
+        except Exception as e:
+            logging.warning(str(e))
+
+        # Update window/splitter size
+        self.cache['window_width'] = self.width()
+        self.cache['window_height'] = self.height()
+        self.cache['splitter_x'] = self.mainWindow.splitter.sizes()[0]
+        self.cache['splitter_y'] = self.mainWindow.splitter.sizes()[1]
+        self.cache['console_hidden'] = (self.mainWindow.btn_consoleToggle.text() == 'Show')
+
+        # persist cache
+        saveCacheSettings(self.cache)
+
+        # clear / close DB
+        self.db.removeTable('UTXOS')
+        self.db.close()
+
+        # Adios
         print("Bye Bye.")
         return QMainWindow.closeEvent(self, *args, **kwargs)
-    
-    
-    
+
+
+
     def onEditRPCServer(self):
         # Create Dialog
-        try:
-            ui = ConfigureRPCserver_dlg(self)
-            if ui.exec():
-                printDbg("Configuring RPC Server...")
-        except Exception as e:
-            print(e)
+        ui = ConfigureRPCservers_dlg(self)
+        if ui.exec():
+            printDbg("Configuring RPC Servers...")

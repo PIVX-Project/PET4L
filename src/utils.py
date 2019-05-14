@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import base64
-from misc import getCallerName, getFunctionName, printException
-from bitcoin import b58check_to_hex, ecdsa_raw_sign, ecdsa_raw_verify, privkey_to_pubkey, encode_sig, decode_sig, dbl_sha256
-from pivx_hashlib import wif_to_privkey
-from pivx_b58 import b58decode
-from bitcoin import bin_dbl_sha256
+from bitcoin import bin_hash160, b58check_to_hex, ecdsa_raw_sign, ecdsa_raw_verify, privkey_to_pubkey, \
+    encode_sig, decode_sig, dbl_sha256, bin_dbl_sha256
 from ipaddress import ip_address
+
+from misc import getCallerName, getFunctionName, printException
+from pivx_b58 import b58decode
+from pivx_hashlib import wif_to_privkey
+
+
 # Bitcoin opcodes used in the application
 OP_DUP = b'\x76'
 OP_HASH160 = b'\xA9'
 OP_QEUALVERIFY = b'\x88'
 OP_CHECKSIG = b'\xAC'
 OP_EQUAL = b'\x87'
+OP_RETURN = b'\x6a'
 # Prefixes - Check P2SH
 P2PKH_PREFIXES = ['D']
 P2SH_PREFIXES = ['7']
@@ -20,21 +24,23 @@ P2SH_PREFIXES = ['7']
 
 def b64encode(text):
     return base64.b64encode(bytearray.fromhex(text)).decode('utf-8')
-    
 
 
-def checkPivxAddr(address):
+
+def checkPivxAddr(address, isTestnet=False):
     try:
-        # check leading char 'D'
-        if address[0] != 'D':
+        # check leading char 'D' or (for testnet) 'x' or 'y'
+        if isTestnet and address[0] not in ['x', 'y']:
             return False
-        
+        if not isTestnet and address[0] != 'D':
+            return False
+
         # decode and verify checksum
         addr_bin = bytes.fromhex(b58decode(address).hex())
         addr_bin_check = bin_dbl_sha256(addr_bin[0:-4])[0:4]
         if addr_bin[-4:] != addr_bin_check:
             return False
-        
+
         return True
     except Exception:
         return False
@@ -71,6 +77,19 @@ def compose_tx_locking_script(dest_address):
 
 
 
+def compose_tx_locking_script_OR(message):
+    """
+    Create a Locking script (ScriptPubKey) that will be assigned to a transaction output.
+    :param message: data for the OP_RETURN
+    :return: sequence of opcodes and its arguments, defining logic of the locking script
+    """
+    data = message.encode()
+    scr = OP_RETURN + int.to_bytes(len(data), 1, byteorder='little') + data
+
+    return scr
+
+
+
 def ecdsa_sign(msg, priv):
     """
     Based on project: https://github.com/chaeplin/dashmnb.
@@ -82,7 +101,7 @@ def ecdsa_sign(msg, priv):
     ok = ecdsa_raw_verify(electrum_sig_hash(msg), decode_sig(sig), pubkey)
     if not ok:
         raise Exception('Bad signature!')
-    return sig    
+    return sig
 
 
 
@@ -94,7 +113,7 @@ def electrum_sig_hash(message):
     return dbl_sha256(padded)
 
 
-    
+
 def extract_pkh_from_locking_script(script):
     if len(script) == 25:
         if script[0:1] == OP_DUP and script[1:2] == OP_HASH160:
@@ -102,8 +121,15 @@ def extract_pkh_from_locking_script(script):
                 return script[3:23]
             else:
                 raise Exception('Non-standard public key hash length (should be 20)')
-    raise Exception('Non-standard locking script type (should be P2PKH)')
-    
+
+        elif len(script) == 35:
+            scriptlen = read_varint(script, 0)[0]
+            if scriptlen in [32, 33]:
+                return bin_hash160(script[1:1 + scriptlen])
+            else:
+                raise Exception('Non-standard public key length (should be 32 or 33)')
+    raise Exception('Non-standard locking script type (should be P2PKH or P2PK). len is %d' % len(script))
+
 
 
 def from_string_to_bytes(a):
@@ -113,35 +139,43 @@ def from_string_to_bytes(a):
 
 def ipmap(ip, port):
     try:
-        ipAddr = ip_address(ip)
         ipv6map = ''
-        
-        if ipAddr.version==4:
+
+        if len(ip) > 6 and ip.endswith('.onion'):
+            pchOnionCat = bytearray([0xFD,0x87,0xD8,0x7E,0xEB,0x43])
+            vchAddr = base64.b32decode(ip[0:-6], True)
+            if len(vchAddr) != 16-len(pchOnionCat):
+                raise Exception('Invalid onion %s' % str(ip))
+            return pchOnionCat.hex() + vchAddr.hex() + int(port).to_bytes(2, byteorder='big').hex()
+
+        ipAddr = ip_address(ip)
+
+        if ipAddr.version == 4:
             ipv6map = '00000000000000000000ffff'
             ip_digits = map(int, ipAddr.exploded.split('.'))
             for i in ip_digits:
                 ipv6map += i.to_bytes(1, byteorder='big')[::-1].hex()
-        
-        elif ipAddr.version==6:
+
+        elif ipAddr.version == 6:
             ip_hextets = map(str, ipAddr.exploded.split(':'))
             for a in ip_hextets:
                 ipv6map += a
-        
+
         else:
-            raise Exception("invalid version number (%d)" % version)
-        
-              
+            raise Exception("invalid version number (%d)" % ipAddr.version)
+
+
         ipv6map += int(port).to_bytes(2, byteorder='big').hex()
         if len(ipv6map) != 36:
             raise Exception("Problems! len is %d" % len(ipv6map))
         return ipv6map
-    
+
     except Exception as e:
             err_msg = "error in ipmap"
             printException(getCallerName(), getFunctionName(), err_msg, e.args)
-            
-            
-            
+
+
+
 def num_to_varint(a):
     """
     Based on project: https://github.com/chaeplin/dashmnb
@@ -155,9 +189,9 @@ def num_to_varint(a):
         return int(254).to_bytes(1, byteorder='big') + x.to_bytes(4, byteorder='little')
     else:
         return int(255).to_bytes(1, byteorder='big') + x.to_bytes(8, byteorder='little')
-    
-    
-       
+
+
+
 def read_varint(buffer, offset):
     if (buffer[offset] < 0xfd):
         value_size = 1
@@ -174,8 +208,8 @@ def read_varint(buffer, offset):
     else:
         raise Exception("Invalid varint size")
     return value, value_size
-            
-            
+
+
 
 def serialize_input_str(tx, prevout_n, sequence, script_sig):
     """
@@ -186,7 +220,7 @@ def serialize_input_str(tx, prevout_n, sequence, script_sig):
     s.append(', ')
     if tx == '00' * 32 and prevout_n == 0xffffffff:
         s.append('coinbase %s' % script_sig)
-        
+
     else:
         script_sig2 = script_sig
         if len(script_sig2) > 24:
@@ -195,6 +229,6 @@ def serialize_input_str(tx, prevout_n, sequence, script_sig):
 
     if sequence != 0xffffffff:
         s.append(', nSequence=%d' % sequence)
-        
+
     s.append(')')
     return ''.join(s)
