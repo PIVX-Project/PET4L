@@ -1,5 +1,5 @@
 {
  "number": "0.0.2",
- "tag": "a",
+ "tag": "b",
  "comments": ["beta release"]
  }
