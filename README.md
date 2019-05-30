@@ -41,22 +41,22 @@ rpcallowip=127.0.0.1
 ```
 
 Configure the RPC server by clicking on the menu
-<br><img src="doc/img/00.png" width="670"><br>
+<br><img src="docs/img/00.png" width="670"><br>
 
 and inserting the same data.
 You can leave ip `127.0.0.1` if the wallet is on the same machine as the pet4l.<br>
 Otherwise set the IP address of the machine running the Core PIVX wallet.
-<br><img src="doc/img/01.png" width="670"><br>
+<br><img src="docs/img/01.png" width="670"><br>
 
 #### Connections
 If the IP and the credentials of the PIVX wallet are correct, it should connect with pet4l instantly.<br>
 Otherwise use the `Connect` button next to "PIVX server: Local Wallet".<br>
 Connect the hardware device to USB and open the PIVX-App on it.<br>
 Click the button `Connect` next to "HW device: Ledger Nano S" to connect to the hardware device.
-<br><img src="doc/img/02.png" width="670"><br>
+<br><img src="docs/img/02.png" width="670"><br>
 
 Once successfully connected, it gives a confirmation message and the led turns purple.
-<br><img src="doc/img/03.png" width="670"><br>
+<br><img src="docs/img/03.png" width="670"><br>
 
 ## Usage
 #### Loading Addresses And UTXOs
@@ -68,30 +68,30 @@ Adjust the fields as needed:
 
 
 Click on `Scan Ledger Device` to retrieve the addresses and load the UTXOs
-<br><img src="doc/img/04.png" width="670"><br>
+<br><img src="docs/img/04.png" width="670"><br>
 <br>
 Open the menu to select an address and check related UTXOs
-<br><img src="doc/img/05.png" width="670"><br>
+<br><img src="docs/img/05.png" width="670"><br>
 
 #### Spending UTXOs
 Once loaded, select those UTXOs you wish to spend.<br>
 Insert the destination address.<br>
 Check the suggested fee and adjust as preferred.<br>
 Then click on `Send`
-<br><img src="doc/img/06.png" width="670"><br>
+<br><img src="docs/img/06.png" width="670"><br>
 <br>
 Verify the details of the TX both on screen and on the display of the Nano S.
 If everything checks out, click "yes" (right button) on the device.
-<br><img src="doc/img/07.png" width="670"><br>
+<br><img src="docs/img/07.png" width="670"><br>
 <br>
 The transaction is now assembled and signed.<br>
 Pet4l asks one more time to check the details before broadcasting the transaction (thus spending the selected UTXOs).
-<br><img src="doc/img/08.png" width="670"><br>
+<br><img src="docs/img/08.png" width="670"><br>
 <br>
 Click `Yes` to finally broadcast the transaction to the PIVX network.
 <br>
 Click `Show Details` to get the TX-id that identify the transaction.
-<br><img src="doc/img/09.png" width="670"><br>
+<br><img src="docs/img/09.png" width="670"><br>
 <br>
 It should appear on the Block Explorers after a few minutes.
-<br><img src="doc/img/10.png" width="670"><br>
+<br><img src="docs/img/10.png" width="670"><br>
