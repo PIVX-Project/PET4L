@@ -17,10 +17,12 @@ from pivx_hashlib import wif_to_privkey, pubkey_to_address
 # Bitcoin opcodes used in the application
 OP_DUP = b'\x76'
 OP_HASH160 = b'\xA9'
-OP_QEUALVERIFY = b'\x88'
+OP_EQUALVERIFY = b'\x88'
 OP_CHECKSIG = b'\xAC'
 OP_EQUAL = b'\x87'
 OP_RETURN = b'\x6a'
+OP_CHECKCOLDSTAKEVERIFY = b'\xD1'
+OP_ROT = b'\x7B'
 # Prefixes - Check P2SH
 P2PKH_PREFIXES = ['D']
 P2SH_PREFIXES = ['7']
@@ -70,7 +72,7 @@ def compose_tx_locking_script(dest_address, isTestnet=False):
               OP_HASH160 + \
               int.to_bytes(len(pubkey_hash), 1, byteorder='little') + \
               pubkey_hash + \
-              OP_QEUALVERIFY + \
+              OP_EQUALVERIFY + \
               OP_CHECKSIG
     elif (((not isTestnet) and (dest_address[0] in P2SH_PREFIXES))
           or (isTestnet and (dest_address[0] in P2SH_PREFIXES_TNET))):
@@ -254,3 +256,14 @@ def serialize_input_str(tx, prevout_n, sequence, script_sig):
 
     s.append(')')
     return ''.join(s)
+
+
+def IsPayToColdStaking(script):
+    return (len(script) == 51 and
+            script[2] == OP_ROT and
+            script[4] == OP_CHECKCOLDSTAKEVERIFY and
+            script[5] == b'\x14' and
+            script[27] == b'\x14' and
+            script[49] == OP_EQUALVERIFY and
+            script[50] == OP_CHECKSIG)
+
