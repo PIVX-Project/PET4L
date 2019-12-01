@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (c) 2017-2019 Random.Zebra (https://github.com/random-zebra/)
+# Distributed under the MIT software license, see the accompanying
+# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
+
 import base64
 from bitcoin import bin_hash160, b58check_to_hex, ecdsa_raw_sign, ecdsa_raw_verify, privkey_to_pubkey, \
-    encode_sig, decode_sig, dbl_sha256, bin_dbl_sha256
+    encode_sig, decode_sig, dbl_sha256, bin_dbl_sha256, ecdsa_raw_recover, encode_pubkey
 from ipaddress import ip_address
 
 from misc import getCallerName, getFunctionName, printException
 from pivx_b58 import b58decode
-from pivx_hashlib import wif_to_privkey
+from pivx_hashlib import wif_to_privkey, pubkey_to_address
 
 
 # Bitcoin opcodes used in the application
@@ -20,6 +24,8 @@ OP_RETURN = b'\x6a'
 # Prefixes - Check P2SH
 P2PKH_PREFIXES = ['D']
 P2SH_PREFIXES = ['7']
+P2PKH_PREFIXES_TNET = ['x', 'y']
+P2SH_PREFIXES_TNET = ['8', '9']
 
 
 def b64encode(text):
@@ -30,9 +36,9 @@ def b64encode(text):
 def checkPivxAddr(address, isTestnet=False):
     try:
         # check leading char 'D' or (for testnet) 'x' or 'y'
-        if isTestnet and address[0] not in ['x', 'y']:
+        if isTestnet and address[0] not in P2PKH_PREFIXES_TNET + P2SH_PREFIXES_TNET:
             return False
-        if not isTestnet and address[0] != 'D':
+        if not isTestnet and address[0] not in P2PKH_PREFIXES + P2SH_PREFIXES:
             return False
 
         # decode and verify checksum
@@ -47,7 +53,7 @@ def checkPivxAddr(address, isTestnet=False):
 
 
 
-def compose_tx_locking_script(dest_address):
+def compose_tx_locking_script(dest_address, isTestnet=False):
     """
     Create a Locking script (ScriptPubKey) that will be assigned to a transaction output.
     :param dest_address: destination address in Base58Check format
@@ -57,7 +63,8 @@ def compose_tx_locking_script(dest_address):
     if len(pubkey_hash) != 20:
         raise Exception('Invalid length of the public key hash: ' + str(len(pubkey_hash)))
 
-    if dest_address[0] in P2PKH_PREFIXES:
+    if (((not isTestnet) and (dest_address[0] in P2PKH_PREFIXES))
+            or (isTestnet and (dest_address[0] in P2PKH_PREFIXES_TNET))):
         # sequence of opcodes/arguments for p2pkh (pay-to-public-key-hash)
         scr = OP_DUP + \
               OP_HASH160 + \
@@ -65,14 +72,18 @@ def compose_tx_locking_script(dest_address):
               pubkey_hash + \
               OP_QEUALVERIFY + \
               OP_CHECKSIG
-    elif dest_address[0] in P2SH_PREFIXES:
+    elif (((not isTestnet) and (dest_address[0] in P2SH_PREFIXES))
+          or (isTestnet and (dest_address[0] in P2SH_PREFIXES_TNET))):
         # sequence of opcodes/arguments for p2sh (pay-to-script-hash)
         scr = OP_HASH160 + \
               int.to_bytes(len(pubkey_hash), 1, byteorder='little') + \
               pubkey_hash + \
               OP_EQUAL
     else:
-        raise Exception('Invalid dest address prefix: ' + dest_address[0])
+        mess = 'Invalid dest address prefix: ' + dest_address[0]
+        if isTestnet:
+            mess += ' for testnet'
+        raise Exception(mess)
     return scr
 
 
@@ -91,18 +102,29 @@ def compose_tx_locking_script_OR(message):
 
 
 def ecdsa_sign(msg, priv):
-    """
-    Based on project: https://github.com/chaeplin/dashmnb.
-    """
-    v, r, s = ecdsa_raw_sign(electrum_sig_hash(msg), priv)
-    sig = encode_sig(v, r, s)
-    pubkey = privkey_to_pubkey(wif_to_privkey(priv))
+    return ecdsa_sign_bin(electrum_sig_hash(msg), priv)
 
-    ok = ecdsa_raw_verify(electrum_sig_hash(msg), decode_sig(sig), pubkey)
-    if not ok:
-        raise Exception('Bad signature!')
-    return sig
 
+def ecdsa_verify_addr(msg, sig, addr):
+    isTestnet = addr[0] not in P2PKH_PREFIXES
+    if not checkPivxAddr(addr, isTestnet):
+        return False
+    v, r, s = decode_sig(sig)
+    Q = ecdsa_raw_recover(electrum_sig_hash(msg), (v, r, s))
+    Qenc = encode_pubkey(Q, 'hex_compressed') if v >= 31 else encode_pubkey(Q, 'hex')
+
+    return pubkey_to_address(Qenc, isTestnet) == addr
+
+
+def ecdsa_sign_bin(msgbin, priv):
+        v, r, s = ecdsa_raw_sign(msgbin, priv)
+        sig = encode_sig(v, r, s)
+        pubkey = privkey_to_pubkey(wif_to_privkey(priv))
+
+        ok = ecdsa_raw_verify(msgbin, decode_sig(sig), pubkey)
+        if not ok:
+            raise Exception('Bad signature!')
+        return sig
 
 
 def electrum_sig_hash(message):

@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (c) 2017-2019 Random.Zebra (https://github.com/random-zebra/)
+# Distributed under the MIT software license, see the accompanying
+# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
+
 import os, sys
+from contextlib import redirect_stdout
 from ipaddress import ip_address
 import logging
 import simplejson as json
@@ -9,7 +14,7 @@ from urllib.parse import urlparse
 
 from PyQt5.QtCore import QObject, pyqtSignal, QSettings
 
-from constants import log_File, DefaultCache
+from constants import log_File, DefaultCache, wqueue
 from PyQt5.QtWidgets import QMessageBox
 
 
@@ -79,6 +84,21 @@ def getFunctionName(inDecorator=False):
         return sys._getframe(1).f_code.co_name
     except Exception:
         return None
+
+
+def getRemotePET4Lversion():
+    import requests
+    try:
+        resp = requests.get("https://raw.githubusercontent.com/PIVX-Project/PET4L/master/src/version.txt")
+        if resp.status_code == 200:
+            data = resp.json()
+            return data['number']
+        else:
+            raise Exception
+
+    except Exception:
+        redirect_print("Invalid response getting version from GitHub\n")
+        return "0.0.0"
 
 
 
@@ -183,7 +203,7 @@ def persistCacheSetting(cache_key, cache_value):
 def printDbg(what):
     logging.info(what)
     log_line = printDbg_msg(what)
-    print(log_line)
+    redirect_print(log_line)
 
 
 
@@ -202,7 +222,7 @@ def printError(
 ):
     logging.error("%s | %s | %s" % (caller_name, function_name, what))
     log_line = printException_msg(caller_name, function_name, what, None, True)
-    print(log_line)
+    redirect_print(log_line)
 
 
 
@@ -217,7 +237,7 @@ def printException(
         what += " ==> %s" % str(errargs)
     logging.warning("%s | %s | %s" % (caller_name, function_name, what))
     text = printException_msg(caller_name, function_name, err_msg, errargs)
-    print(text)
+    redirect_print(text)
 
 
 
@@ -247,7 +267,7 @@ def printException_msg(
 def printOK(what):
     logging.debug(what)
     msg = '<b style="color: #cc33ff">===> ' + what + '</b><br>'
-    print(msg)
+    redirect_print(msg)
 
 
 
@@ -276,6 +296,11 @@ def readCacheSettings():
         return cache
     except:
         return DefaultCache
+
+
+def redirect_print(what):
+    with redirect_stdout(WriteStream(wqueue)):
+        print(what)
 
 
 def saveCacheSettings(cache):
@@ -328,7 +353,7 @@ class DisconnectedException(Exception):
         # Call the base class constructor
         super().__init__(message)
         # clear device
-        hwDevice.closeDevice()
+        hwDevice.closeDevice(message)
 
 
 # Stream object to redirect sys.stdout and sys.stderr to a queue

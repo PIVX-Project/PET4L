@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (c) 2017-2019 Random.Zebra (https://github.com/random-zebra/)
+# Distributed under the MIT software license, see the accompanying
+# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
+
 import sys
 import os.path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
@@ -62,7 +66,7 @@ class TabRewards_gui(QWidget):
         self.edt_internalExternal.setMaximum(1)
         line1.addWidget(self.edt_internalExternal)
         line1.addStretch(1)
-        self.btn_reload = QPushButton("Scan Ledger device")
+        self.btn_reload = QPushButton("Load/Refresh")
         self.btn_reload.setToolTip("Reload data from ledger device")
         line1.addWidget(self.btn_reload)
         layout.addRow(line1)

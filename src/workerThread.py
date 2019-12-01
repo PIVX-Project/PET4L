@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (c) 2017-2019 Random.Zebra (https://github.com/random-zebra/)
+# Distributed under the MIT software license, see the accompanying
+# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
+
 """
             Based on project:
             https://github.com/Bertrand256/dash-masternode-tool
 """
 from PyQt5.QtCore import QThread
+
+from misc import printError
 
 class CtrlObject(object):
     pass
@@ -35,4 +41,5 @@ class WorkerThread(QThread):
         try:
             self.worker_result = self.worker_fun(self.ctrl_obj, *self.worker_fun_args)
         except Exception as e:
-            print(e)
+            printError("worker thread", "run", str(e))
+            self.stop()
