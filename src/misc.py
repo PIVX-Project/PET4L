@@ -292,6 +292,10 @@ def readCacheSettings():
         cache["selectedHW_index"] = settings.value('cache_HWindex', DefaultCache["selectedHW_index"], type=int)
         cache["selectedRPC_index"] = settings.value('cache_RPCindex', DefaultCache["selectedRPC_index"], type=int)
         cache["isTestnetRPC"] = settings.value('cache_isTestnetRPC', DefaultCache["isTestnetRPC"], type=bool)
+        cache["hwAcc"] = settings.value('cache_hwAcc', DefaultCache["hwAcc"], type=int)
+        cache["spathFrom"] = settings.value('cache_spathFrom', DefaultCache["spathFrom"], type=int)
+        cache["spathTo"] = settings.value('cache_spathTo', DefaultCache["spathTo"], type=int)
+        cache["intExt"] = settings.value('cache_intExt', DefaultCache["intExt"], type=int)
         add_defaultKeys_to_dict(cache, DefaultCache)
         return cache
     except:
@@ -315,6 +319,10 @@ def saveCacheSettings(cache):
     settings.setValue('cache_HWindex', cache.get('selectedHW_index'))
     settings.setValue('cache_RPCindex', cache.get('selectedRPC_index'))
     settings.setValue('cache_isTestnetRPC', cache.get('isTestnetRPC'))
+    settings.setValue('cache_hwAcc', cache.get('hwAcc'))
+    settings.setValue('cache_spathFrom', cache.get('spathFrom'))
+    settings.setValue('cache_spathTo', cache.get('spathTo'))
+    settings.setValue('cache_intExt', cache.get('intExt'))
 
 
 
