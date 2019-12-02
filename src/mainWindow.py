@@ -99,11 +99,11 @@ class MainWindow(QWidget):
         self.consoleLogThread.start()
         printDbg("Console Log thread started")
 
-        ###-- Initialize tabs
+        ###-- Initialize tabs (single QLayout here)
         self.tabs = QTabWidget()
         self.t_rewards = TabRewards(self)
         ###-- Add tabs
-        self.tabs.addTab(self.tabRewards, "Spend from Ledger")
+        self.tabs.addTab(self.tabRewards, self.parent.spmtIcon, "Spend")
         ###-- Draw Tabs
         self.splitter = QSplitter(Qt.Vertical)
         ###-- Add tabs and console to Layout
@@ -245,9 +245,6 @@ class MainWindow(QWidget):
         self.ledPurpleH_icon = QPixmap(os.path.join(self.imgDir, 'icon_purpleLedH.png')).scaledToHeight(17, Qt.SmoothTransformation)
         self.ledGrayH_icon = QPixmap(os.path.join(self.imgDir, 'icon_grayLedH.png')).scaledToHeight(17, Qt.SmoothTransformation)
         self.ledHalfPurpleH_icon = QPixmap(os.path.join(self.imgDir, 'icon_halfPurpleLedH.png')).scaledToHeight(17, Qt.SmoothTransformation)
-        self.ledRedV_icon = QPixmap(os.path.join(self.imgDir, 'icon_redLedV.png')).scaledToHeight(17, Qt.SmoothTransformation)
-        self.ledGrayV_icon = QPixmap(os.path.join(self.imgDir, 'icon_grayLedV.png')).scaledToHeight(17, Qt.SmoothTransformation)
-        self.ledGreenV_icon = QPixmap(os.path.join(self.imgDir, 'icon_greenLedV.png')).scaledToHeight(17, Qt.SmoothTransformation)
         self.lastBlock_icon = QPixmap(os.path.join(self.imgDir, 'icon_lastBlock.png')).scaledToHeight(15, Qt.SmoothTransformation)
         self.connGreen_icon = QPixmap(os.path.join(self.imgDir, 'icon_greenConn.png')).scaledToHeight(15, Qt.SmoothTransformation)
         self.connRed_icon = QPixmap(os.path.join(self.imgDir, 'icon_redConn.png')).scaledToHeight(15, Qt.SmoothTransformation)
@@ -257,7 +254,8 @@ class MainWindow(QWidget):
         self.ledgerImg = QPixmap(os.path.join(self.imgDir, 'ledger.png'))
         self.trezorImg = QPixmap(os.path.join(self.imgDir, 'trezorModT.png'))
         self.trezorOneImg = QPixmap(os.path.join(self.imgDir, 'trezorOne.png'))
-        self.coldStaking_icon = QIcon(os.path.join(self.imgDir, 'icon-coldstaking.png'))
+        self.coldStaking_icon = QIcon(os.path.join(self.imgDir, 'icon_coldstaking.png'))
+        self.copy_icon = QIcon(os.path.join(self.imgDir, 'icon_copy.png'))
 
 
     def onCheckHw(self):

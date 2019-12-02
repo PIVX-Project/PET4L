@@ -20,7 +20,7 @@ class GuiHeader(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         # --- 1) Check Box
         self.centralBox = QGridLayout()
-        self.centralBox.setContentsMargins(0, 0, 0, 5)
+        self.centralBox.setContentsMargins(0, 0, 0, 0)
         # --- 1a) Select & Check RPC
         label1 = QLabel("PIVX server")
         self.centralBox.addWidget(label1, 0, 0)
@@ -73,9 +73,4 @@ class GuiHeader(QWidget):
         self.centralBox.addWidget(self.hwLed, 1, 3)
         layout.addLayout(self.centralBox)
         layout.addStretch(1)
-        # --- 3) logo
-        Logo = QLabel()
-        Logo_file = os.path.join(caller.imgDir, 'pet4lLogo_horiz.png')
-        Logo.setPixmap(QPixmap(Logo_file).scaledToHeight(87, Qt.SmoothTransformation))
-        layout.addWidget(Logo)
         self.setLayout(layout)
