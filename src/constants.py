@@ -31,6 +31,7 @@ database_File = os.path.join(user_dir, 'application.db')
 
 DefaultCache = {
     "lastAddress": "",
+    "lastStakerAddress": "",
     "window_width": starting_width,
     "window_height": starting_height,
     "splitter_x": 342,

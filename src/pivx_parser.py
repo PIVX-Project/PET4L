@@ -92,9 +92,14 @@ def ParseTx(hex_string, isTestnet=False):
 
 
 def IsPayToColdStaking(rawtx, out_n):
+    printDbg("Here")
     tx = ParseTx(rawtx)
     script = tx['vout'][out_n]["scriptPubKey"]["hex"]
-    return utils.IsPayToColdStaking(bytes.fromhex(script))
+    return utils.IsPayToColdStaking(bytes.fromhex(script)), IsCoinStake(tx)
+
+
+def IsCoinStake(json_tx):
+    return json_tx['vout'][0]["scriptPubKey"]["hex"] == ""
 
 
 def GetDelegatedStaker(rawtx, out_n, isTestnet):

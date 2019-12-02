@@ -57,6 +57,15 @@ class Delegate_dlg(QDialog):
             if x['receiver'] not in adds:
                 adds.append(x['receiver'])
         comboBox.addItems(adds)
+        # load last used destination from cache
+        self.ui.lineEdt_stakerAddress.setText(
+            self.tabRewards.caller.parent.cache.get("laststakerAddress"))
+
+
+    def onSend(self):
+        dest_addr = self.ui.lineEdt_stakerAddress.text()
+        self.tabRewards.caller.parent.cache["lastStakerAddress"] = persistCacheSetting(
+            'cache_lastStakerAddress', dest_addr)
 
 
 class Ui_DelegateDlg(object):

@@ -139,8 +139,8 @@ class Database():
 
             # Tables for Utxos
             cursor.execute("CREATE TABLE IF NOT EXISTS UTXOS("
-                           " tx_hash TEXT, tx_ouput_n INTEGER, satoshis INTEGER,"
-                           " confirmations INTEGER, script TEXT, raw_tx TEXT, receiver TEXT, staker TEXT,"
+                           " tx_hash TEXT, tx_ouput_n INTEGER, satoshis INTEGER, confirmations INTEGER,"
+                           " script TEXT, raw_tx TEXT, receiver TEXT, staker TEXT, coinstake BOOLEAN,"
                            " PRIMARY KEY (tx_hash, tx_ouput_n))")
 
             printDbg("DB: Tables initialized")
@@ -340,6 +340,7 @@ class Database():
             utxo['raw_tx'] = row[5]
             utxo['receiver'] = row[6]
             utxo['staker'] = row[7]
+            utxo['coinstake'] = row[8]
             # add to list
             rewards.append(utxo)
 
@@ -353,9 +354,9 @@ class Database():
             cursor = self.getCursor()
 
             cursor.execute("INSERT INTO UTXOS "
-                           "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                           "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                            (utxo['txid'], utxo['vout'], utxo['satoshis'], utxo['confirmations'],
-                            utxo['script'], utxo['raw_tx'], utxo['receiver'], utxo['staker'])
+                            utxo['script'], utxo['raw_tx'], utxo['receiver'], utxo['staker'], utxo['coinstake'])
                            )
 
         except Exception as e:

@@ -186,7 +186,7 @@ def now():
 
 
 def persistCacheSetting(cache_key, cache_value):
-    settings = QSettings('PIVX', 'SecurePivxMasternodeTool')
+    settings = QSettings('PIVX', 'PET4L')
     if not settings.contains(cache_key):
         printDbg("Cache key %s not found" % str(cache_key))
         printOK("Adding new cache key to settings...")
@@ -283,6 +283,7 @@ def readCacheSettings():
     try:
         cache = {}
         cache["lastAddress"] = settings.value('cache_lastAddress', DefaultCache["lastAddress"], type=str)
+        cache["lastStakerAddress"] = settings.value('cache_lastStakerAddress', DefaultCache["lastStakerAddress"], type=str)
         cache["window_width"] = settings.value('cache_winWidth', DefaultCache["window_width"], type=int)
         cache["window_height"] = settings.value('cache_winHeight', DefaultCache["window_height"], type=int)
         cache["splitter_x"] = settings.value('cache_splitterX', DefaultCache["splitter_x"], type=int)
@@ -306,6 +307,7 @@ def redirect_print(what):
 def saveCacheSettings(cache):
     settings = QSettings('PIVX', 'PET4L')
     settings.setValue('cache_lastAddress', cache.get('lastAddress'))
+    settings.setValue('cache_lastStakerAddress', cache.get('lastStakerAddress'))
     settings.setValue('cache_useSwiftX', cache.get('useSwiftX'))
     settings.setValue('cache_winWidth', cache.get('window_width'))
     settings.setValue('cache_winHeight', cache.get('window_height'))

@@ -124,7 +124,7 @@ class ConfigureRPCservers_dlg(QDialog):
     def onRemoveServer(self, index):
         mess = "Are you sure you want to remove server with index %d (%s) from list?" % (
             index, self.main_wnd.mainWindow.rpcServersList[index].get('host'))
-        ans = myPopUp(self, QMessageBox.Question, 'SPMT - remove server', mess)
+        ans = myPopUp(self, QMessageBox.Question, 'PET4L - remove server', mess)
         if ans == QMessageBox.Yes:
             # Remove entry from database
             id = self.main_wnd.mainWindow.rpcServersList[index].get('id')
