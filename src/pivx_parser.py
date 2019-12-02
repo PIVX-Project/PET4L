@@ -4,8 +4,8 @@
 # Distributed under the MIT software license, see the accompanying
 # file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
 
-from misc import getCallerName, getFunctionName, printException
-from utils import extract_pkh_from_locking_script
+from misc import getCallerName, getFunctionName, printException, printDbg
+import utils
 from pivx_hashlib import pubkeyhash_to_address
 
 class HexParser():
@@ -61,7 +61,7 @@ def ParseTxOutput(p, isTestnet=False):
     vout["scriptPubKey"]["hex"] = p.readString(script_len, "big")
     vout["scriptPubKey"]["addresses"] = []
     try:
-        add_bytes = extract_pkh_from_locking_script(bytes.fromhex(vout["scriptPubKey"]["hex"]))
+        add_bytes = utils.extract_pkh_from_locking_script(bytes.fromhex(vout["scriptPubKey"]["hex"]))
         address = pubkeyhash_to_address(add_bytes, isTestnet)
         vout["scriptPubKey"]["addresses"].append(address)
     except Exception as e:
@@ -87,3 +87,9 @@ def ParseTx(hex_string, isTestnet=False):
 
     tx["locktime"] = p.readInt(4, "little")
     return tx
+
+
+def IsPayToColdStaking(rawtx, out_n):
+    tx = ParseTx(rawtx)
+    script = tx['vout'][out_n]["scriptPubKey"]["hex"]
+    return utils.IsPayToColdStaking(bytes.fromhex(script))

@@ -257,6 +257,7 @@ class MainWindow(QWidget):
         self.ledgerImg = QPixmap(os.path.join(self.imgDir, 'ledger.png'))
         self.trezorImg = QPixmap(os.path.join(self.imgDir, 'trezorModT.png'))
         self.trezorOneImg = QPixmap(os.path.join(self.imgDir, 'trezorOne.png'))
+        self.coldStaking_icon = QIcon(os.path.join(self.imgDir, 'icon-coldstaking.png'))
 
 
     def onCheckHw(self):
@@ -265,18 +266,14 @@ class MainWindow(QWidget):
         self.showHWstatus()
 
 
-
-
     def onCheckRpc(self):
         self.runInThread(self.updateRPCstatus, (True,),)
-
 
 
     def onCheckVersion(self):
         printDbg("Checking SPMT version...")
         self.versionLabel.setText("--")
         self.runInThread(self.checkVersion, (), self.updateVersion)
-
 
 
     def checkVersion(self, ctrl):
@@ -293,7 +290,6 @@ class MainWindow(QWidget):
             self.versionMess = "You have the latest version of PET4L"
 
 
-
     def updateVersion(self):
         if self.versionMess is not None:
             self.versionLabel.setText(self.versionMess)
@@ -308,7 +304,6 @@ class MainWindow(QWidget):
         self.parent.cache['selectedHW_index'] = persistCacheSetting('cache_HWindex',i)
 
 
-
     def onChangeSelectedRPC(self, i):
         # Don't update when we are clearing the box
         if not self.updatingRPCbox:
@@ -317,13 +312,8 @@ class MainWindow(QWidget):
             self.runInThread(self.updateRPCstatus, (True,), )
 
 
-
-
     def onCleanConsole(self):
         self.consoleArea.clear()
-
-
-
 
 
     def onSaveConsole(self):
@@ -344,8 +334,6 @@ class MainWindow(QWidget):
             printException(getCallerName(), getFunctionName(), err_msg, e.args)
 
 
-
-
     def onToggleConsole(self):
         if self.btn_consoleToggle.text() == 'Hide':
             self.btn_consoleToggle.setText('Show')
@@ -359,13 +347,9 @@ class MainWindow(QWidget):
             self.consoleArea.show()
 
 
-
-
     def showHWstatus(self):
         self.updateHWleds()
         myPopUp_sb(self, "info", 'SPMT - hw check', "%s" % self.hwStatusMess)
-
-
 
 
     def showRPCstatus(self, server_index, fDebug):
@@ -376,7 +360,6 @@ class MainWindow(QWidget):
                 myPopUp_sb(self, "info", 'SPMT - rpc check', "%s" % self.rpcStatusMess)
 
 
-
     def updateHWleds(self):
         if self.hwStatus == 1:
             self.header.hwLed.setPixmap(self.ledHalfPurpleH_icon)
@@ -385,7 +368,6 @@ class MainWindow(QWidget):
         else:
             self.header.hwLed.setPixmap(self.ledGrayH_icon)
         self.header.hwLed.setToolTip(self.hwStatusMess)
-
 
 
     def updateHWstatus(self, ctrl):
@@ -400,7 +382,6 @@ class MainWindow(QWidget):
         printDbg("status:%s - mess: %s" % (self.hwStatus, self.hwStatusMess))
 
 
-
     def updateLastBlockLabel(self):
         text = '--'
         if self.rpcLastBlock == 1:
@@ -411,7 +392,6 @@ class MainWindow(QWidget):
                 text += " (Synchronizing)"
 
         self.header.lastBlockLabel.setText(text)
-
 
 
     def updateLastBlockPing(self):
@@ -434,7 +414,6 @@ class MainWindow(QWidget):
                 self.header.lastPingIcon.setStyleSheet("color: %s" % color)
 
 
-
     def updateRPCled(self, fDebug=False):
         if self.rpcConnected:
             self.header.rpcLed.setPixmap(self.ledPurpleH_icon)
@@ -453,7 +432,6 @@ class MainWindow(QWidget):
         self.header.rpcLed.setToolTip(self.rpcStatusMess)
         self.updateLastBlockLabel()
         self.updateLastBlockPing()
-
 
 
     def updateRPClist(self):
@@ -487,7 +465,6 @@ class MainWindow(QWidget):
         self.updatingRPCbox = False
         # reload servers in configure dialog
         self.sig_RPClistReloaded.emit()
-
 
 
     def updateRPCstatus(self, ctrl, fDebug=False):

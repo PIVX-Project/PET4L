@@ -7,15 +7,14 @@
 import threading
 import simplejson as json
 
-from PyQt5.Qt import QApplication, pyqtSignal
+from PyQt5.Qt import QApplication
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QMessageBox, QTableWidgetItem, QHeaderView
 
 from constants import MINIMUM_FEE
 from misc import printDbg, printError, printException, getCallerName, getFunctionName, \
-    persistCacheSetting, myPopUp, myPopUp_sb, DisconnectedException
-from pivx_parser import ParseTx
+    persistCacheSetting, myPopUp_sb, DisconnectedException
+from pivx_parser import ParseTx, IsPayToColdStaking
 from qt.gui_tabRewards import TabRewards_gui
 from threads import ThreadFuns
 from utils import checkPivxAddr
@@ -93,6 +92,9 @@ class TabRewards():
                 self.ui.rewardsList.box.setItem(row, 2, item(txId))
                 self.ui.rewardsList.box.setItem(row, 3, item(str(utxo.get('vout', None))))
                 self.ui.rewardsList.box.showRow(row)
+                if utxo['cold_utxo']:
+                    self.ui.rewardsList.box.item(row, 2).setIcon(self.caller.coldStaking_icon)
+                    self.ui.rewardsList.box.item(row, 2).setToolTip("Cold Stake / Delegation")
 
             self.ui.rewardsList.box.resizeColumnsToContents()
 
@@ -202,6 +204,7 @@ class TabRewards():
                 # Save utxo to db
                 u['receiver'] = self.curr_addr
                 u['raw_tx'] = rawtx
+                u['cold_utxo'] = IsPayToColdStaking(rawtx, u['vout'])
                 self.caller.parent.db.addReward(u)
 
                 # emit percent
