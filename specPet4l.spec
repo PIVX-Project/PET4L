@@ -23,10 +23,10 @@ version_str = version_data["number"] + version_data["tag"]
 
 add_files = [('src/version.txt', '.'), ('img', 'img')]
 add_files.append( libModule('bitcoin', 'english.txt','bitcoin') )
-add_files.append( (os.path.join(lib_path, 'trezorlib/coins.json'), 'trezorlib') )
-add_files.append( (os.path.join(lib_path, 'trezorlib/transport'), 'trezorlib/transport') )
+add_files.append( libModule('trezorlib', 'coins.json', 'trezorlib') )
+add_files.append( libModule('trezorlib', 'transport', 'trezorlib/transport') )
 
-elif os_type == 'win32':
+if os_type == 'win32':
     import ctypes.util
     l = ctypes.util.find_library('libusb-1.0.dll')
     if l:
