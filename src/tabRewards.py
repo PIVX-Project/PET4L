@@ -7,15 +7,14 @@
 import threading
 import simplejson as json
 
-from PyQt5.Qt import QApplication, pyqtSignal
+from PyQt5.Qt import QApplication
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
 from PyQt5.QtWidgets import QMessageBox, QTableWidgetItem, QHeaderView
 
 from constants import MINIMUM_FEE
 from misc import printDbg, printError, printException, getCallerName, getFunctionName, \
-    persistCacheSetting, myPopUp, myPopUp_sb, DisconnectedException
-from pivx_parser import ParseTx
+    persistCacheSetting, myPopUp_sb, DisconnectedException
+from pivx_parser import ParseTx, IsPayToColdStaking, GetDelegatedStaker
 from qt.gui_tabRewards import TabRewards_gui
 from threads import ThreadFuns
 from utils import checkPivxAddr
@@ -38,11 +37,14 @@ class TabRewards():
         self.ui = TabRewards_gui(self.caller.imgDir)
         self.caller.tabRewards = self.ui
 
-        # load last used destination from cache
+        # load cache
         self.ui.destinationLine.setText(self.caller.parent.cache.get("lastAddress"))
-        # load useSwiftX check from cache
         if self.caller.parent.cache.get("useSwiftX"):
             self.ui.swiftxCheck.setChecked(True)
+        self.ui.edt_hwAccount.setValue(self.caller.parent.cache["hwAcc"])
+        self.ui.edt_spathFrom.setValue(self.caller.parent.cache["spathFrom"])
+        self.ui.edt_spathTo.setValue(self.caller.parent.cache["spathTo"])
+        self.ui.edt_internalExternal.setValue(self.caller.parent.cache["intExt"])
 
         self.updateFee()
 
@@ -93,6 +95,19 @@ class TabRewards():
                 self.ui.rewardsList.box.setItem(row, 2, item(txId))
                 self.ui.rewardsList.box.setItem(row, 3, item(str(utxo.get('vout', None))))
                 self.ui.rewardsList.box.showRow(row)
+                if utxo['staker'] != "":
+                    self.ui.rewardsList.box.item(row, 2).setIcon(self.caller.coldStaking_icon)
+                    self.ui.rewardsList.box.item(row, 2).setToolTip("Staked by <b>%s</b>" % utxo['staker'])
+
+                # make immature rewards unselectable
+                if utxo['coinstake']:
+                    required = 16 if self.caller.isTestnetRPC else 101
+                    if utxo['confirmations'] < required:
+                        for i in range(0, 4):
+                            self.ui.rewardsList.box.item(row, i).setFlags(Qt.NoItemFlags)
+                            ttip = self.ui.rewardsList.box.item(row, i).toolTip()
+                            self.ui.rewardsList.box.item(row, i).setToolTip(
+                                ttip + "\n(Immature - %d confirmations required)" % required)
 
             self.ui.rewardsList.box.resizeColumnsToContents()
 
@@ -146,6 +161,12 @@ class TabRewards():
         spathTo = self.ui.edt_spathTo.value()
         intExt = self.ui.edt_internalExternal.value()
         isTestnet = self.caller.isTestnetRPC
+
+        # Save settings
+        self.caller.parent.cache["hwAcc"] = persistCacheSetting('cache_hwAcc', hwAcc)
+        self.caller.parent.cache["spathFrom"] = persistCacheSetting('cache_spathFrom', spathFrom)
+        self.caller.parent.cache["spathTo"] = persistCacheSetting('cache_spathTo', spathTo)
+        self.caller.parent.cache["intExt"] = persistCacheSetting('cache_intExt', intExt)
 
         for i in range(spathFrom, spathTo+1):
             path = "%d'/%d/%d" % (hwAcc, intExt, i)
@@ -202,6 +223,10 @@ class TabRewards():
                 # Save utxo to db
                 u['receiver'] = self.curr_addr
                 u['raw_tx'] = rawtx
+                u['staker'] = ""
+                p2cs, u['coinstake'] = IsPayToColdStaking(rawtx, u['vout'])
+                if p2cs:
+                    u['staker'] = GetDelegatedStaker(rawtx, u['vout'], self.caller.isTestnetRPC)
                 self.caller.parent.db.addReward(u)
 
                 # emit percent
@@ -254,13 +279,13 @@ class TabRewards():
 
         # Check HW device
         if self.caller.hwStatus != 2:
-            myPopUp_sb(self.caller, "crit", 'SPMT - hw device check', "Connect to HW device first")
+            myPopUp_sb(self.caller, "crit", 'PET4L - hw device check', "Connect to HW device first")
             printDbg("Unable to connect to hardware device. The device status is: %d" % self.caller.hwStatus)
             return None
 
         # Check destination Address
         if not checkPivxAddr(self.dest_addr, self.caller.isTestnetRPC):
-            myPopUp_sb(self.caller, "crit", 'SPMT - PIVX address check', "The destination address is missing, or invalid.")
+            myPopUp_sb(self.caller, "crit", 'PET4L - PIVX address check', "The destination address is missing, or invalid.")
             return None
 
         # LET'S GO

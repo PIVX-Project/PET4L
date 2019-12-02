@@ -16,8 +16,10 @@ MPATH_TREZOR = "44'/119'/"
 MPATH_TESTNET = "44'/1'/"
 WIF_PREFIX = 212 # 212 = d4
 MAGIC_BYTE = 30
+STAKE_MAGIC_BYTE = 63
 TESTNET_WIF_PREFIX = 239
 TESTNET_MAGIC_BYTE = 139
+TESTNET_STAKE_MAGIC_BYTE = 73
 DEFAULT_PROTOCOL_VERSION = 70915
 MINIMUM_FEE = 0.0001    # minimum PIV/kB
 starting_width = 1033
@@ -37,7 +39,11 @@ DefaultCache = {
     "useSwiftX": False,
     "selectedHW_index": 0,
     "selectedRPC_index": 0,
-    "isTestnetRPC": False
+    "isTestnetRPC": False,
+    "hwAcc": 0,
+    "spathFrom": 0,
+    "spathTo": 10,
+    "intExt": 0
     }
 
 trusted_RPC_Servers = [

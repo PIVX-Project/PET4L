@@ -9,18 +9,21 @@ from bitcoin import bin_hash160, b58check_to_hex, ecdsa_raw_sign, ecdsa_raw_veri
     encode_sig, decode_sig, dbl_sha256, bin_dbl_sha256, ecdsa_raw_recover, encode_pubkey
 from ipaddress import ip_address
 
-from misc import getCallerName, getFunctionName, printException
+from misc import getCallerName, getFunctionName, printException, printDbg
 from pivx_b58 import b58decode
 from pivx_hashlib import wif_to_privkey, pubkey_to_address
+from pivx_parser import ParseTx
 
 
 # Bitcoin opcodes used in the application
 OP_DUP = b'\x76'
 OP_HASH160 = b'\xA9'
-OP_QEUALVERIFY = b'\x88'
+OP_EQUALVERIFY = b'\x88'
 OP_CHECKSIG = b'\xAC'
 OP_EQUAL = b'\x87'
 OP_RETURN = b'\x6a'
+OP_CHECKCOLDSTAKEVERIFY = b'\xD1'
+OP_ROT = b'\x7B'
 # Prefixes - Check P2SH
 P2PKH_PREFIXES = ['D']
 P2SH_PREFIXES = ['7']
@@ -70,7 +73,7 @@ def compose_tx_locking_script(dest_address, isTestnet=False):
               OP_HASH160 + \
               int.to_bytes(len(pubkey_hash), 1, byteorder='little') + \
               pubkey_hash + \
-              OP_QEUALVERIFY + \
+              OP_EQUALVERIFY + \
               OP_CHECKSIG
     elif (((not isTestnet) and (dest_address[0] in P2SH_PREFIXES))
           or (isTestnet and (dest_address[0] in P2SH_PREFIXES_TNET))):
@@ -144,13 +147,18 @@ def extract_pkh_from_locking_script(script):
             else:
                 raise Exception('Non-standard public key hash length (should be 20)')
 
-        elif len(script) == 35:
-            scriptlen = read_varint(script, 0)[0]
-            if scriptlen in [32, 33]:
-                return bin_hash160(script[1:1 + scriptlen])
-            else:
-                raise Exception('Non-standard public key length (should be 32 or 33)')
-    raise Exception('Non-standard locking script type (should be P2PKH or P2PK). len is %d' % len(script))
+    elif len(script) == 35:
+        scriptlen = read_varint(script, 0)[0]
+        if scriptlen in [32, 33]:
+            return bin_hash160(script[1:1 + scriptlen])
+        else:
+            raise Exception('Non-standard public key length (should be 32 or 33)')
+
+    elif IsPayToColdStaking(script):
+        return script[28:48]
+
+
+    raise Exception('Non-standard locking script type (should be P2PKH, P2PK or P2CS). len is %d' % len(script))
 
 
 
@@ -254,3 +262,16 @@ def serialize_input_str(tx, prevout_n, sequence, script_sig):
 
     s.append(')')
     return ''.join(s)
+
+
+def IsPayToColdStaking(script):
+    return (len(script) == 51 and
+            script[2] == int.from_bytes(OP_ROT, 'little') and
+            script[4] == int.from_bytes(OP_CHECKCOLDSTAKEVERIFY, 'little') and
+            script[5] == 20 and
+            script[27] == 20 and
+            script[49] == int.from_bytes(OP_EQUALVERIFY, 'little') and
+            script[50] == int.from_bytes(OP_CHECKSIG, 'little'))
+
+def GetDelegatedStaker(script):
+    return script[6:26]

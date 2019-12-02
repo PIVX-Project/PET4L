@@ -56,8 +56,8 @@ SectionEnd
 
 Section -AdditionalIcons
   WriteIniStr "$INSTDIR\${PRODUCT_NAME}.url" "InternetShortcut" "URL" "${PRODUCT_WEB_SITE}"
-  CreateShortCut "$SMPROGRAMS\SPMT\Website.lnk" "$INSTDIR\${PRODUCT_NAME}.url"
-  CreateShortCut "$SMPROGRAMS\SPMT\Uninstall.lnk" "$INSTDIR\uninst.exe"
+  CreateShortCut "$SMPROGRAMS\PET4L\Website.lnk" "$INSTDIR\${PRODUCT_NAME}.url"
+  CreateShortCut "$SMPROGRAMS\PET4L\Uninstall.lnk" "$INSTDIR\uninst.exe"
 SectionEnd
 
 Section -Post
@@ -107,7 +107,7 @@ Function .onInit
       ; disable registry redirection (enable access to 64-bit portion of registry)
       SetRegView 64
     ${Else}
-      MessageBox MB_OK|MB_ICONSTOP "Cannot install SPMT on a 32-bit system."
+      MessageBox MB_OK|MB_ICONSTOP "Cannot install PET4L on a 32-bit system."
       Abort
     ${EndIf}
 FunctionEnd

@@ -96,7 +96,7 @@ class TabSign:
         ok = ecdsa_verify_addr(self.ui.messageTextEdt.toPlainText(), b64encode(sig), self.currAddress)
         if not ok:
             mess = "Signature doesn't verify."
-            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'SPMT - no signature', mess)
+            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - no signature', mess)
 
 
     def findPubKey(self):
@@ -107,7 +107,7 @@ class TabSign:
             mess = "Unable to find public key. The action was refused on the device or another application "
             mess += "might have taken over the USB communication with the device.<br><br>"
             mess += "The operation was canceled."
-            myPopUp_sb(self.main_wnd, QMessageBox.Critical, 'SPMT - PK not found', mess)
+            myPopUp_sb(self.main_wnd, QMessageBox.Critical, 'PET4L - PK not found', mess)
             return
         self.updateGenericAddress(pk)
 
@@ -132,7 +132,7 @@ class TabSign:
                 starting_spath, starting_spath + spath_count - 1, self.hwAcc)
             mess += "Unable to find the address <i>%s</i>.<br>Maybe it's on a different account.<br><br>" % addy
             mess += "Do you want to scan %d more addresses of account n.<b>%d</b> ?" % (spath_count, self.hwAcc)
-            ans = myPopUp(self.main_wnd, QMessageBox.Question, 'SPMT - spath search', mess)
+            ans = myPopUp(self.main_wnd, QMessageBox.Question, 'PET4L - spath search', mess)
             if ans == QMessageBox.Yes:
                 # Look for 10 more addresses
                 starting_spath += spath_count
@@ -149,12 +149,12 @@ class TabSign:
     def onCopy(self):
         if self.ui.signatureTextEdt.document().isEmpty():
             mess = "Nothing to copy. Sign message first."
-            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'SPMT - no signature', mess)
+            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - no signature', mess)
             return
         cb = QApplication.clipboard()
         cb.clear(mode=cb.Clipboard)
         cb.setText(self.ui.signatureTextEdt.toPlainText(), mode=cb.Clipboard)
-        myPopUp_sb(self.main_wnd, QMessageBox.Information, 'SPMT - copied', "Signature copied to the clipboard")
+        myPopUp_sb(self.main_wnd, QMessageBox.Information, 'PET4L - copied', "Signature copied to the clipboard")
 
 
     def onEdit(self):
@@ -165,7 +165,7 @@ class TabSign:
     def onSave(self):
         if self.ui.signatureTextEdt.document().isEmpty():
             mess = "Nothing to save. Sign message first."
-            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'SPMT - no signature', mess)
+            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - no signature', mess)
             return
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
@@ -176,12 +176,12 @@ class TabSign:
                 save_file = open(fileName, 'w')
                 save_file.write(self.ui.signatureTextEdt.toPlainText())
                 save_file.close()
-                myPopUp_sb(self.main_wnd, QMessageBox.Information, 'SPMT - saved', "Signature saved to file")
+                myPopUp_sb(self.main_wnd, QMessageBox.Information, 'PET4L - saved', "Signature saved to file")
                 return
         except Exception as e:
             err_msg = "error writing signature to file"
             printException(getCallerName(), getFunctionName(), err_msg, e.args)
-        myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'SPMT - NOT saved', "Signature NOT saved to file")
+        myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - NOT saved', "Signature NOT saved to file")
 
 
     def onSearchPK(self):
@@ -192,19 +192,19 @@ class TabSign:
             addy = self.ui.addressLineEdit.text().strip()
             if len(addy) == 0:
                 mess = "No address. Insert PIVX address first."
-                myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'SPMT - no address', mess)
+                myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - no address', mess)
                 return
 
             if not checkPivxAddr(addy, self.currIsTestnet):
                 net = "testnet" if self.currIsTestnet else "mainnet"
                 mess = "PIVX address not valid. Insert valid PIVX %s address" % net
-                myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'SPMT - invalid address', mess)
+                myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - invalid address', mess)
                 return
 
         # check hw connection
         while self.main_wnd.hwStatus != 2:
             mess = "HW device not connected. Try to connect?"
-            ans = myPopUp(self.main_wnd, QMessageBox.Question, 'SPMT - hw check', mess)
+            ans = myPopUp(self.main_wnd, QMessageBox.Question, 'PET4L - hw check', mess)
             if ans == QMessageBox.No:
                 return
             # re connect
@@ -224,12 +224,12 @@ class TabSign:
         # check message
         if self.ui.messageTextEdt.document().isEmpty():
             mess = "Nothing to sign. Insert message."
-            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'SPMT - no message', mess)
+            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - no message', mess)
             return
         # check hw connection
         while self.main_wnd.hwStatus != 2:
             mess = "HW device not connected. Try to connect?"
-            ans = myPopUp(self.main_wnd, QMessageBox.Question, 'SPMT - hw check', mess)
+            ans = myPopUp(self.main_wnd, QMessageBox.Question, 'PET4L - hw check', mess)
             if ans == QMessageBox.No:
                 return
             # re connect
@@ -277,7 +277,7 @@ class TabSign:
             addy = self.ui.addressLineEdit.text().strip()
             if addy != genericAddy:
                 mess = "Error! retrieved address (%s) different from input (%s)" % (genericAddy, addy)
-                myPopUp_sb(self.main_wnd, QMessageBox.Critical, 'SPMT - address mismatch', mess)
+                myPopUp_sb(self.main_wnd, QMessageBox.Critical, 'PET4L - address mismatch', mess)
                 self.ui.addressLabel.setText("")
                 return
         # update generic address
@@ -303,19 +303,19 @@ class TabVerify:
         addy = self.ui.addressLineEdit.text().strip()
         if len(addy) == 0:
             mess = "No address inserted"
-            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'SPMT - no address', mess)
+            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - no address', mess)
             return
         if not checkPivxAddr(addy, True) and not checkPivxAddr(addy, False):
             mess = "PIVX address not valid. Insert valid PIVX address"
-            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'SPMT - invalid address', mess)
+            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - invalid address', mess)
             return
         if self.ui.messageTextEdt.document().isEmpty():
             mess = "No message inserted"
-            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'SPMT - no message', mess)
+            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - no message', mess)
             return
         if self.ui.signatureTextEdt.document().isEmpty():
             mess = "No signature inserted"
-            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'SPMT - no signature', mess)
+            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - no signature', mess)
             return
 
         try:
@@ -324,7 +324,7 @@ class TabVerify:
                                    self.ui.addressLineEdit.text().strip())
         except Exception as e:
             mess = "Error decoding signature:\n" + str(e)
-            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'SPMT - invalid signature', mess)
+            myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - invalid signature', mess)
             ok = False
         if ok:
             mess = "<span style='color: green'>Signature OK"

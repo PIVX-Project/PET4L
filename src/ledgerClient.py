@@ -16,7 +16,7 @@ from constants import MPATH_LEDGER as MPATH, MPATH_TESTNET, HW_devices
 from misc import printDbg, printException, printOK, getCallerName, getFunctionName, splitString, DisconnectedException
 from pivx_hashlib import pubkey_to_address, single_sha256
 from threads import ThreadFuns
-from utils import extract_pkh_from_locking_script, compose_tx_locking_script, IsPayToColdStaking
+from utils import extract_pkh_from_locking_script, compose_tx_locking_script
 
 
 def process_ledger_exceptions(func):
@@ -143,7 +143,8 @@ class LedgerApi(QObject):
             'pubkey': curr_pubkey,
             'bip32_path': bip32_path,
             'outputIndex': utxo['vout'],
-            'txid': utxo['txid']
+            'txid': utxo['txid'],
+            'p2cs': (utxo['staker'] != "")
         })
 
 
@@ -365,7 +366,10 @@ class LedgerApi(QObject):
                 inputTx.prevOut = bytearray.fromhex(new_input['txid'])[::-1] + int.to_bytes(new_input['outputIndex'], 4,
                                                                                             byteorder='little')
 
-                inputTx.script = bytearray([len(sig)]) + sig + bytearray([0x21]) + new_input['pubkey']
+                inputTx.script = bytearray([len(sig)]) + sig
+                if new_input['p2cs']:
+                    inputTx.script += bytearray([0x00])
+                inputTx.script += bytearray([0x21]) + new_input['pubkey']
 
                 inputTx.sequence = bytearray([0xFF, 0xFF, 0xFF, 0xFF])
 
