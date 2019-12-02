@@ -14,8 +14,9 @@ from PyQt5.QtWidgets import QMessageBox, QTableWidgetItem, QHeaderView
 from constants import MINIMUM_FEE
 from misc import printDbg, printError, printException, getCallerName, getFunctionName, \
     persistCacheSetting, myPopUp_sb, DisconnectedException
-from pivx_parser import ParseTx, IsPayToColdStaking
+from pivx_parser import ParseTx, GetDelegatedStaker, IsPayToColdStaking
 from qt.gui_tabRewards import TabRewards_gui
+from qt.dlg_delegate import Delegate_dlg
 from threads import ThreadFuns
 from utils import checkPivxAddr
 
@@ -52,6 +53,7 @@ class TabRewards():
         self.ui.btn_selectAllRewards.clicked.connect(lambda: self.onSelectAllRewards())
         self.ui.btn_deselectAllRewards.clicked.connect(lambda: self.onDeselectAllRewards())
         self.ui.swiftxCheck.clicked.connect(lambda: self.updateFee())
+        self.ui.btn_delegateRewards.clicked.connect(lambda: self.onDelegateRewards())
         self.ui.btn_sendRewards.clicked.connect(lambda: self.onSendRewards())
         self.ui.btn_Cancel.clicked.connect(lambda: self.onCancel())
 
@@ -92,9 +94,9 @@ class TabRewards():
                 self.ui.rewardsList.box.setItem(row, 2, item(txId))
                 self.ui.rewardsList.box.setItem(row, 3, item(str(utxo.get('vout', None))))
                 self.ui.rewardsList.box.showRow(row)
-                if utxo['cold_utxo']:
+                if utxo['staker'] != "":
                     self.ui.rewardsList.box.item(row, 2).setIcon(self.caller.coldStaking_icon)
-                    self.ui.rewardsList.box.item(row, 2).setToolTip("Cold Stake / Delegation")
+                    self.ui.rewardsList.box.item(row, 2).setToolTip("Staked by <b>%s</b>" % utxo['staker'])
 
             self.ui.rewardsList.box.resizeColumnsToContents()
 
@@ -204,7 +206,9 @@ class TabRewards():
                 # Save utxo to db
                 u['receiver'] = self.curr_addr
                 u['raw_tx'] = rawtx
-                u['cold_utxo'] = IsPayToColdStaking(rawtx, u['vout'])
+                u['staker'] = ""
+                if IsPayToColdStaking(rawtx, u['vout']):
+                    u['staker'] = GetDelegatedStaker(rawtx, u['vout'], self.caller.isTestnetRPC)
                 self.caller.parent.db.addReward(u)
 
                 # emit percent
@@ -237,6 +241,16 @@ class TabRewards():
 
             if self.curr_balance is not None:
                 self.runInThread = ThreadFuns.runInThread(self.load_utxos_thread, (), self.display_utxos)
+
+
+    def onDelegateRewards(self):
+        if self.selectedRewards:
+            # Create Dialog
+            dialog = Delegate_dlg(self)
+            if dialog.exec():
+                printDbg("Delegating...")
+        else:
+            myPopUp_sb(self.caller, "warn", 'Delegation NOT sent', "No UTXO selected")
 
 
 

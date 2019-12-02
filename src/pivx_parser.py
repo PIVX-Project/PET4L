@@ -93,3 +93,12 @@ def IsPayToColdStaking(rawtx, out_n):
     tx = ParseTx(rawtx)
     script = tx['vout'][out_n]["scriptPubKey"]["hex"]
     return utils.IsPayToColdStaking(bytes.fromhex(script))
+
+
+def GetDelegatedStaker(rawtx, out_n, isTestnet):
+    tx = ParseTx(rawtx)
+    script = tx['vout'][out_n]["scriptPubKey"]["hex"]
+    if not utils.IsPayToColdStaking(bytes.fromhex(script)):
+        return ""
+    pkh = utils.GetDelegatedStaker(bytes.fromhex(script))
+    return pubkeyhash_to_address(pkh, isTestnet, isCold=True)

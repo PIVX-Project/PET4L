@@ -273,3 +273,6 @@ def IsPayToColdStaking(script):
             script[49] == int.from_bytes(OP_EQUALVERIFY, 'little') and
             script[50] == int.from_bytes(OP_CHECKSIG, 'little'))
 
+
+def GetDelegatedStaker(script):
+    return script[6:26]

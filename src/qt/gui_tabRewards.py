@@ -129,6 +129,8 @@ class TabRewards_gui(QWidget):
         self.swiftxCheck.setToolTip("check for SwiftX instant transaction (flat fee rate of 0.01 PIV)")
         hBox2.addWidget(QLabel("Use SwiftX"))
         hBox2.addWidget(self.swiftxCheck)
+        self.btn_delegateRewards = QPushButton("Delegate...")
+        hBox2.addWidget(self.btn_delegateRewards)
         layout.addRow(hBox2)
         ##--- ROW 4
         hBox3 = QHBoxLayout()
