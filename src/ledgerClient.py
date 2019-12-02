@@ -144,7 +144,7 @@ class LedgerApi(QObject):
             'bip32_path': bip32_path,
             'outputIndex': utxo['vout'],
             'txid': utxo['txid'],
-            'p2cs': utxo['cold_utxo']
+            'p2cs': (utxo['staker'] != "")
         })
 
 
