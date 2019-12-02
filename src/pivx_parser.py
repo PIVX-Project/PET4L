@@ -92,7 +92,6 @@ def ParseTx(hex_string, isTestnet=False):
 
 
 def IsPayToColdStaking(rawtx, out_n):
-    printDbg("Here")
     tx = ParseTx(rawtx)
     script = tx['vout'][out_n]["scriptPubKey"]["hex"]
     return utils.IsPayToColdStaking(bytes.fromhex(script)), IsCoinStake(tx)

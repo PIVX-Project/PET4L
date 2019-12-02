@@ -16,7 +16,8 @@ from constants import MPATH_LEDGER as MPATH, MPATH_TESTNET, HW_devices
 from misc import printDbg, printException, printOK, getCallerName, getFunctionName, splitString, DisconnectedException
 from pivx_hashlib import pubkey_to_address, single_sha256
 from threads import ThreadFuns
-from utils import extract_pkh_from_locking_script, compose_tx_locking_script
+from utils import extract_pkh_from_locking_script, compose_tx_locking_script, compose_tx_locking_script_p2cs, \
+    compose_tx_locking_script_OR, IsPayToColdStaking
 
 
 def process_ledger_exceptions(func):
@@ -150,7 +151,7 @@ class LedgerApi(QObject):
 
 
     @process_ledger_exceptions
-    def prepare_transfer_tx_bulk(self, caller, rewardsArray, dest_address, tx_fee, useSwiftX=False, isTestnet=False):
+    def prepare_transfer_tx_bulk(self, caller, rewardsArray, dest_address, tx_fee, useSwiftX=False, isTestnet=False, stakerAddress=""):
         with self.lock:
             # For each UTXO create a Ledger 'trusted input'
             self.trusted_inputs = []
@@ -185,8 +186,17 @@ class LedgerApi(QObject):
 
             for o in arg_outputs:
                 output = bitcoinOutput()
-                output.script = compose_tx_locking_script(o['address'], isTestnet)
-                output.amount = int.to_bytes(o['valueSat'], 8, byteorder='little')
+                if stakerAddress == "":
+                    # regular TX
+                    output.script = compose_tx_locking_script(o['address'], isTestnet)
+                    output.amount = int.to_bytes(o['valueSat'], 8, byteorder='little')
+                else:
+                    # cold staking delegation
+                    #output.script = compose_tx_locking_script_p2cs(o['address'], stakerAddress)
+                    #output.amount = int.to_bytes(0, 8, byteorder='little')
+                    compose_tx_locking_script_OR("Fuck ya")
+
+
                 self.new_transaction.outputs.append(output)
 
             self.tx_progress.emit(100)
@@ -351,9 +361,7 @@ class LedgerApi(QObject):
             for idx, new_input in enumerate(self.arg_inputs):
                 try:
                     self.chip.startUntrustedTransaction(starting, idx, self.trusted_inputs, new_input['locking_script'])
-
                     self.chip.finalizeInputFull(self.all_outputs_raw)
-
                     sig = self.chip.untrustedHashSign(new_input['bip32_path'], lockTime=0)
                 except BTChipException as e:
                     if e.args[0] != "Invalid status 6985":

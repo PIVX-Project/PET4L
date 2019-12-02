@@ -4,32 +4,21 @@
 # Distributed under the MIT software license, see the accompanying
 # file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QColor, QPalette, QFont
 from PyQt5.QtWidgets import (
     QApplication,
-    QCheckBox,
     QComboBox,
     QDialog,
-    QFileDialog,
     QFormLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QMessageBox,
     QPushButton,
-    QRadioButton,
-    QSpinBox,
-    QTabWidget,
-    QTextEdit,
     QVBoxLayout,
-    QWidget,
 )
 
-from misc import myPopUp, myPopUp_sb, getCallerName, getFunctionName, printException
-from pivx_hashlib import pubkey_to_address
-from threads import ThreadFuns
-from utils import checkPivxAddr, ecdsa_verify_addr
+from misc import getCallerName, getFunctionName, printException, persistCacheSetting, \
+    redirect_print, DisconnectedException
+
 
 class Delegate_dlg(QDialog):
     def __init__(self, tabRewards):
@@ -39,6 +28,10 @@ class Delegate_dlg(QDialog):
         self.initUI(tabRewards.caller)
         self.loadAmounts()
         self.loadAddresses()
+        # connect ui buttons
+        self.ui.btn_delegate.clicked.connect(lambda: self.onSend())
+        self.ui.btn_cancel.clicked.connect(lambda: self.onCancel())
+
 
     def initUI(self, main_wnd):
         self.ui = Ui_DelegateDlg()
@@ -57,15 +50,68 @@ class Delegate_dlg(QDialog):
             if x['receiver'] not in adds:
                 adds.append(x['receiver'])
         comboBox.addItems(adds)
-        # load last used destination from cache
+        # load last used destinations from cache
         self.ui.lineEdt_stakerAddress.setText(
-            self.tabRewards.caller.parent.cache.get("laststakerAddress"))
+            self.tabRewards.caller.parent.cache.get("lastStakerAddress"))
+
+
+    def onCancel(self):
+        # close dialog
+        self.close()
 
 
     def onSend(self):
-        dest_addr = self.ui.lineEdt_stakerAddress.text()
+        owner_address = self.ui.comboBox_ownerAddress.itemText(self.ui.comboBox_ownerAddress.currentIndex())
+        staker_address = self.ui.lineEdt_stakerAddress.text()
+        # !TODO: check staker address
         self.tabRewards.caller.parent.cache["lastStakerAddress"] = persistCacheSetting(
-            'cache_lastStakerAddress', dest_addr)
+            'cache_lastStakerAddress', staker_address)
+
+        # Let's go
+        try:
+            self.tabRewards.ui.loadingLine.show()
+            self.tabRewards.ui.loadingLinePercent.show()
+            QApplication.processEvents()
+            self.tabRewards.currFee = self.tabRewards.ui.feeLine.value() * 1e8
+            # re-connect signals
+            try:
+                self.tabRewards.caller.hwdevice.api.sigTxdone.disconnect()
+            except:
+                pass
+            try:
+                self.tabRewards.caller.hwdevice.api.sigTxabort.disconnect()
+            except:
+                pass
+            try:
+                self.tabRewards.caller.hwdevice.api.tx_progress.disconnect()
+            except:
+                pass
+            self.tabRewards.caller.hwdevice.api.sigTxdone.connect(self.tabRewards.FinishSend)
+            self.tabRewards.caller.hwdevice.api.sigTxabort.connect(self.tabRewards.AbortSend)
+            self.tabRewards.caller.hwdevice.api.tx_progress.connect(self.tabRewards.updateProgressPercent)
+
+            try:
+                self.tabRewards.txFinished = False
+                self.tabRewards.caller.hwdevice.prepare_transfer_tx(self.tabRewards.caller,
+                                                                    self.tabRewards.curr_path,
+                                                                    self.tabRewards.selectedRewards,
+                                                                    owner_address,
+                                                                    self.tabRewards.currFee,
+                                                                    self.tabRewards.useSwiftX(),
+                                                                    self.tabRewards.caller.isTestnetRPC,
+                                                                    staker_address)
+
+            except DisconnectedException as e:
+                self.tabRewards.caller.hwStatus = 0
+                self.tabRewards.caller.updateHWleds()
+
+            except Exception as e:
+                err_msg = "Error while preparing transaction. <br>"
+                err_msg += "Probably Blockchain wasn't synced when trying to fetch raw TXs.<br>"
+                err_msg += "<b>Wait for full synchronization</b> then hit 'Clear/Reload'"
+                printException(getCallerName(), getFunctionName(), err_msg, e.args)
+        except Exception as e:
+            redirect_print(e)
 
 
 class Ui_DelegateDlg(object):
@@ -98,9 +144,12 @@ class Ui_DelegateDlg(object):
         self.comboBox_ownerAddress = QComboBox()
         self.comboBox_ownerAddress.setToolTip("Select owner address")
         layout.addRow(QLabel("Owner address"), self.comboBox_ownerAddress)
+        self.btn_cancel = QPushButton("Cancel")
         self.btn_delegate = QPushButton("Send delegation")
+        self.btn_delegate.setFocus()
         hBox2 = QHBoxLayout()
         hBox2.addStretch(1)
+        hBox2.addWidget(self.btn_cancel)
         hBox2.addWidget(self.btn_delegate)
         layout.addRow(hBox2)
         self.layout.addLayout(layout)

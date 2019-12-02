@@ -176,7 +176,9 @@ class TrezorApi(QObject):
 
 
 
-    def prepare_transfer_tx_bulk(self, caller, rewardsArray, dest_address, tx_fee, useSwiftX=False, isTestnet=False):
+    def prepare_transfer_tx_bulk(self, caller, rewardsArray, dest_address, tx_fee, useSwiftX=False, isTestnet=False, stakerAddress=""):
+        if stakerAddress != "":
+            raise Exception("Cold Staking delegation not supported on Trezor devices")
         inputs = []
         outputs = []
         c_name = "PIVX"

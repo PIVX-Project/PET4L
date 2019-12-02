@@ -24,6 +24,9 @@ OP_EQUAL = b'\x87'
 OP_RETURN = b'\x6a'
 OP_CHECKCOLDSTAKEVERIFY = b'\xD1'
 OP_ROT = b'\x7B'
+OP_IF = b'\x63'
+OP_ELSE = b'\x67'
+OP_ENDIF = b'\x68'
 # Prefixes - Check P2SH
 P2PKH_PREFIXES = ['D']
 P2SH_PREFIXES = ['7']
@@ -89,6 +92,18 @@ def compose_tx_locking_script(dest_address, isTestnet=False):
         raise Exception(mess)
     return scr
 
+
+def compose_tx_locking_script_p2cs(owner_address, staker_address):
+    # convert addresses to public key hashes
+    owner_pkh = bytearray.fromhex(b58check_to_hex(owner_address))
+    staker_pkh = bytearray.fromhex(b58check_to_hex(staker_address))
+    scr = OP_DUP + OP_HASH160 + OP_ROT + OP_IF + OP_CHECKCOLDSTAKEVERIFY + \
+          int.to_bytes(len(staker_pkh), 1, byteorder='little') + staker_pkh + \
+          OP_ELSE + \
+          int.to_bytes(len(owner_pkh), 1, byteorder='little') + owner_pkh + \
+          OP_ENDIF + OP_EQUALVERIFY + OP_CHECKSIG
+
+    return scr
 
 
 def compose_tx_locking_script_OR(message):
