@@ -38,11 +38,14 @@ class TabRewards():
         self.ui = TabRewards_gui(self.caller.imgDir)
         self.caller.tabRewards = self.ui
 
-        # load last used destination from cache
+        # load cache
         self.ui.destinationLine.setText(self.caller.parent.cache.get("lastAddress"))
-        # load useSwiftX check from cache
         if self.caller.parent.cache.get("useSwiftX"):
             self.ui.swiftxCheck.setChecked(True)
+        self.ui.edt_hwAccount.setValue(self.caller.parent.cache["hwAcc"])
+        self.ui.edt_spathFrom.setValue(self.caller.parent.cache["spathFrom"])
+        self.ui.edt_spathTo.setValue(self.caller.parent.cache["spathTo"])
+        self.ui.edt_internalExternal.setValue(self.caller.parent.cache["intExt"])
 
         self.updateFee()
 
@@ -161,6 +164,12 @@ class TabRewards():
         spathTo = self.ui.edt_spathTo.value()
         intExt = self.ui.edt_internalExternal.value()
         isTestnet = self.caller.isTestnetRPC
+
+        # Save settings
+        self.caller.parent.cache["hwAcc"] = persistCacheSetting('cache_hwAcc', hwAcc)
+        self.caller.parent.cache["spathFrom"] = persistCacheSetting('cache_spathFrom', spathFrom)
+        self.caller.parent.cache["spathTo"] = persistCacheSetting('cache_spathTo', spathTo)
+        self.caller.parent.cache["intExt"] = persistCacheSetting('cache_intExt', intExt)
 
         for i in range(spathFrom, spathTo+1):
             path = "%d'/%d/%d" % (hwAcc, intExt, i)
@@ -302,7 +311,7 @@ class TabRewards():
                 QApplication.processEvents()
                 self.currFee = self.ui.feeLine.value() * 1e8
 
-                # save last destination address and swiftxCheck to cache and persist to settings
+                # save settings
                 self.caller.parent.cache["lastAddress"] = persistCacheSetting('cache_lastAddress', self.dest_addr)
                 self.caller.parent.cache["useSwiftX"] = persistCacheSetting('cache_useSwiftX', self.useSwiftX())
 

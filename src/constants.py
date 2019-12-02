@@ -40,7 +40,11 @@ DefaultCache = {
     "useSwiftX": False,
     "selectedHW_index": 0,
     "selectedRPC_index": 0,
-    "isTestnetRPC": False
+    "isTestnetRPC": False,
+    "hwAcc": 0,
+    "spathFrom": 0,
+    "spathTo": 10,
+    "intExt": 0
     }
 
 trusted_RPC_Servers = [
