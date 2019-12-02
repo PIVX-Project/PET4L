@@ -23,6 +23,8 @@ version_str = version_data["number"] + version_data["tag"]
 
 add_files = [('src/version.txt', '.'), ('img', 'img')]
 add_files.append( libModule('bitcoin', 'english.txt','bitcoin') )
+add_files.append( libModule('trezorlib', 'coins.json', 'trezorlib') )
+add_files.append( libModule('trezorlib', 'transport', 'trezorlib/transport') )
 
 if os_type == 'win32':
     import ctypes.util
@@ -77,26 +79,20 @@ pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 
 exe = EXE(pyz,
+          a.binaries,
+          a.zipfiles,
+          a.datas,
           a.scripts,
-          exclude_binaries=True,
-          name='PET4L',
+          name='pet4l',
           debug=False,
           strip=False,
           upx=False,
           console=False,
           icon=os_path.join(base_dir, 'img', 'spmt.%s' % ('icns' if os_type=='darwin' else 'ico')) )
 
-coll = COLLECT(exe,
-               a.binaries,
-               a.zipfiles,
-               a.datas,
-               strip=False,
-               upx=True,
-               name='app')
-
 if os_type == 'darwin':
-	app = BUNDLE(coll,
-             name='PET4L.app',
+	app = BUNDLE(exe,
+             name='pet4l.app',
              icon=os_path.join(base_dir, 'img', 'spmt.icns'),
              bundle_identifier=None,
              info_plist={'NSHighResolutionCapable': 'True'})
@@ -107,23 +103,14 @@ dist_path = os_path.join(base_dir, 'dist')
 app_path = os_path.join(dist_path, 'app')
 os.chdir(dist_path)
 
-# Copy Readme Files
-from shutil import copyfile, copytree
-print('Copying README.md')
-copyfile(os_path.join(base_dir, 'README.md'), 'README.md')
-copytree(os_path.join(base_dir, 'docs'), 'docs')
-
 if os_type == 'win32':
-	# Copy Qt5 Platforms
-	os.system('xcopy app\PyQt5\Qt\plugins\platforms app\platforms\ /i')
 	os.chdir(base_dir)
 	# Rename dist Dir
 	dist_path_win = os_path.join(base_dir, 'PET4L-v' + version_str + '-Win64')
 	os.rename(dist_path, dist_path_win)
-	# Compress dist Dir
-	print('Compressing Windows App Folder')
-	os.system('"C:\\Program Files\\7-Zip\\7z.exe" a %s %s -mx0' % (dist_path_win + '.zip', dist_path_win))
-
+	# Create NSIS compressed installer
+	print('Creating Windows installer (requires NSIS)')
+	os.system('\"c:\\program files (x86)\\NSIS\\makensis.exe\" %s' % os.path.join(base_dir, 'setup.nsi'))
 
 if os_type == 'linux':
 	os.chdir(base_dir)
@@ -134,7 +121,6 @@ if os_type == 'linux':
 	print('Compressing Linux App Folder')
 	os.system('tar -zcvf %s -C %s %s' % ('PET4L-v' + version_str + '-x86_64-gnu_linux.tar.gz',
                 base_dir, 'PET4L-v' + version_str + '-gnu_linux'))
-
 
 if os_type == 'darwin':
     os.chdir(base_dir)

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (c) 2017-2019 Random.Zebra (https://github.com/random-zebra/)
+# Distributed under the MIT software license, see the accompanying
+# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
+
 import logging
 
 from PyQt5.QtCore import QObject, pyqtSignal
@@ -8,6 +12,7 @@ from constants import HW_devices
 from ledgerClient import LedgerApi
 from misc import printOK, printDbg
 from time import sleep
+from trezorClient import TrezorApi
 
 
 def check_api_init(func):
@@ -25,8 +30,6 @@ def check_api_init(func):
 class HWdevice(QObject):
     # signal: sig1 (thread) is done - emitted by signMessageFinish
     sig1done = pyqtSignal(str)
-    # signal: sig_disconnected -emitted with DisconnectedException
-    sig_disconnected = pyqtSignal(str)
 
     def __init__(self, main_wnd, *args, **kwargs):
         printDbg("HW: Initializing Class...")
@@ -42,20 +45,23 @@ class HWdevice(QObject):
             raise Exception("Invalid HW index")
 
         # Select API
-        self.api = LedgerApi()
+        api_index = HW_devices[hw_index][1]
+        if api_index == 0:
+            self.api = LedgerApi()
+        else:
+            self.api = TrezorApi(hw_index)
 
         # Init device & connect signals
         self.api.initDevice()
         self.sig1done = self.api.sig1done
-        self.sig_disconnected.connect(self.main_wnd.clearHWstatus)
+        self.api.sig_disconnected.connect(self.main_wnd.clearHWstatus)
         printOK("HW: hw device with index %d initialized" % hw_index)
 
 
     @check_api_init
-    def clearDevice(self, message=''):
+    def clearDevice(self):
         printDbg("HW: Clearing HW device...")
-        self.api.closeDevice()
-        self.sig_disconnected.emit(message)
+        self.api.closeDevice('')
         printOK("HW: device cleared")
 
 

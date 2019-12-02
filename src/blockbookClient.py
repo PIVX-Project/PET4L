@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (c) 2017-2019 Random.Zebra (https://github.com/random-zebra/)
+# Distributed under the MIT software license, see the accompanying
+# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
+
 import requests
 
 from misc import getCallerName, getFunctionName, printException
-
-
 
 def process_blockbook_exceptions(func):
 
@@ -19,7 +21,6 @@ def process_blockbook_exceptions(func):
                 new_url = "https://explorer.pivx.link"
             message = "BlockBook Client exception on %s\nTrying backup server %s" % (client.url, new_url)
             printException(getCallerName(True), getFunctionName(True), message, str(e))
-
             try:
                 client.url = new_url
                 return func(*args, **kwargs)

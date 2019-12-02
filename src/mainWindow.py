@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (c) 2017-2019 Random.Zebra (https://github.com/random-zebra/)
+# Distributed under the MIT software license, see the accompanying
+# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
+
 import logging
 import os
-from queue import Queue
-import sys
+
 from time import strftime, gmtime
 import threading
 
@@ -13,11 +16,10 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QGroupBox, QVBoxL
     QFileDialog, QTextEdit, QTabWidget, QLabel, QSplitter
 
 from apiClient import ApiClient
-from constants import starting_height, DefaultCache
+from constants import starting_height, DefaultCache, wqueue
 from hwdevice import HWdevice
 from misc import printDbg, printException, printOK, getCallerName, getFunctionName, \
-    WriteStream, WriteStreamReceiver, now, \
-    persistCacheSetting,  myPopUp_sb
+    WriteStreamReceiver, now, persistCacheSetting,  myPopUp_sb, getRemotePET4Lversion
 
 from tabRewards import TabRewards
 from qt.guiHeader import GuiHeader
@@ -82,9 +84,8 @@ class MainWindow(QWidget):
         ##-- init Api Client
         self.apiClient = ApiClient(self.isTestnetRPC)
 
-        ###-- Create Queues and redirect stdout
-        self.queue = Queue()
-        sys.stdout = WriteStream(self.queue)
+        ###-- Create Queue to redirect stdout
+        self.queue = wqueue
 
         ###-- Init last logs
         logging.debug("STARTING PET4L")
@@ -213,12 +214,13 @@ class MainWindow(QWidget):
         self.versionLabel = QLabel("--")
         self.versionLabel.setOpenExternalLinks(True)
         consoleHeader.addWidget(self.versionLabel)
-        #self.btn_checkVersion = QPushButton("Check PET4L version")
-        #self.btn_checkVersion.setToolTip("Check latest stable release of PET4L")
-        #self.btn_checkVersion.clicked.connect(lambda: self.onCheckVersion())
-        #consoleHeader.addWidget(self.btn_checkVersion)
+        self.btn_checkVersion = QPushButton("Check PET4L version")
+        self.btn_checkVersion.setToolTip("Check latest stable release of PET4L")
+        self.btn_checkVersion.clicked.connect(lambda: self.onCheckVersion())
+        consoleHeader.addWidget(self.btn_checkVersion)
         layout.addLayout(consoleHeader)
         self.consoleArea = QTextEdit()
+        self.consoleArea.setReadOnly(True)
         almostBlack = QColor(40, 40, 40)
         palette = QPalette()
         palette.setColor(QPalette.Base, almostBlack)
@@ -253,6 +255,8 @@ class MainWindow(QWidget):
         self.removeMN_icon = QIcon(os.path.join(self.imgDir, 'icon_delete.png'))
         self.editMN_icon = QIcon(os.path.join(self.imgDir, 'icon_edit.png'))
         self.ledgerImg = QPixmap(os.path.join(self.imgDir, 'ledger.png'))
+        self.trezorImg = QPixmap(os.path.join(self.imgDir, 'trezorModT.png'))
+        self.trezorOneImg = QPixmap(os.path.join(self.imgDir, 'trezorOne.png'))
 
 
     def onCheckHw(self):
@@ -266,6 +270,34 @@ class MainWindow(QWidget):
     def onCheckRpc(self):
         self.runInThread(self.updateRPCstatus, (True,),)
 
+
+
+    def onCheckVersion(self):
+        printDbg("Checking SPMT version...")
+        self.versionLabel.setText("--")
+        self.runInThread(self.checkVersion, (), self.updateVersion)
+
+
+
+    def checkVersion(self, ctrl):
+        local_version = self.parent.version['number'].split('.')
+        self.gitVersion = getRemotePET4Lversion()
+        remote_version = self.gitVersion.split('.')
+
+        if (remote_version[0] > local_version[0]) or \
+        (remote_version[0] == local_version[0] and remote_version[1] > local_version[1]) or \
+        (remote_version[0] == local_version[0] and remote_version[1] == local_version[1] and remote_version[2] > local_version[2]):
+            self.versionMess = '<b style="color:red">New Version Available:</b> %s  ' % (self.gitVersion)
+            self.versionMess += '(<a href="https://github.com/PIVX-Project/PET4L/releases/">download</a>)'
+        else:
+            self.versionMess = "You have the latest version of PET4L"
+
+
+
+    def updateVersion(self):
+        if self.versionMess is not None:
+            self.versionLabel.setText(self.versionMess)
+        printOK("Remote version: %s" % str(self.gitVersion))
 
 
     def onChangeSelectedHW(self, i):
@@ -459,30 +491,26 @@ class MainWindow(QWidget):
 
 
     def updateRPCstatus(self, ctrl, fDebug=False):
-        self.sig_clearRPCstatus.emit()
-        self.rpcClient = None
-
         rpc_index, rpc_protocol, rpc_host, rpc_user, rpc_password = self.getRPCserver()
         if fDebug:
             printDbg("Trying to connect to RPC %s://%s..." % (rpc_protocol, rpc_host))
 
         try:
             rpcClient = RpcClient(rpc_protocol, rpc_host, rpc_user, rpc_password)
-        except Exception as e:
-            printException(getCallerName(), getFunctionName(), "exception in updateRPCstatus", str(e))
-            return
-
-        try:
             status, statusMess, lastBlock, r_time1, isTestnet = rpcClient.getStatus()
             isBlockchainSynced, r_time2 = rpcClient.isBlockchainSynced()
         except Exception as e:
+            printException(getCallerName(), getFunctionName(), "exception updating RPC status:", str(e))
+            # clear status
+            self.rpcClient = None
+            self.sig_clearRPCstatus.emit()
             return
 
         rpcResponseTime = None
-        if r_time1 is not None and r_time2 !=0 :
+        if r_time1 is not None and r_time2 != 0:
             rpcResponseTime = round((r_time1+r_time2)/2, 3)
 
-        # Update status and client only if selected server is not changed
+        # Do not update status if the user has selected a different server since the start of updateRPCStatus()
         if rpc_index != self.header.rpcClientsBox.currentIndex():
             return
 

@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import sys
-import os.path
+# Copyright (c) 2017-2019 Random.Zebra (https://github.com/random-zebra/)
+# Distributed under the MIT software license, see the accompanying
+# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
+
+import os
+from queue import Queue
+
+wqueue = Queue()
 
 APPDATA_DIRNAME = ".PET4L-DATA"
 
@@ -42,5 +48,7 @@ trusted_RPC_Servers = [
 
 HW_devices = [
     # (model name, api index)
-    ("LEDGER Nano S", 0),
+    ("LEDGER Nano", 0),
+    ("TREZOR One", 1),
+    ("TREZOR Model T", 1)
 ]

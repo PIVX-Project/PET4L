@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (c) 2017-2019 Random.Zebra (https://github.com/random-zebra/)
+# Distributed under the MIT software license, see the accompanying
+# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
+
 import logging
 import os
 import signal
-import sys
 
 from PyQt5.QtCore import pyqtSignal, QSettings
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QMainWindow, QAction, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QAction
 
 from database import Database
 from misc import printDbg, initLogs, saveCacheSettings, readCacheSettings, getVersion
 from mainWindow import MainWindow
 from constants import user_dir
 from qt.dlg_configureRPCservers import ConfigureRPCservers_dlg
+from qt.dlg_signmessage import SignMessage_dlg
 
 class ServiceExit(Exception):
     """
@@ -33,7 +37,7 @@ class App(QMainWindow):
     # Signal emitted from database
     sig_changed_rpcServers = pyqtSignal()
 
-    def __init__(self, imgDir, start_args):
+    def __init__(self, imgDir, app, start_args):
         # Create the userdir if it doesn't exist
         if not os.path.exists(user_dir):
             os.makedirs(user_dir)
@@ -41,6 +45,7 @@ class App(QMainWindow):
         # Initialize Logs
         initLogs()
         super().__init__()
+        self.app = app
 
         # Register the signal handlers
         signal.signal(signal.SIGTERM, service_shutdown)
@@ -78,15 +83,19 @@ class App(QMainWindow):
         self.pivx_icon = QIcon(os.path.join(imgDir, 'icon_pivx.png'))
         self.script_icon = QIcon(os.path.join(imgDir, 'icon_script.png'))
         self.setWindowIcon(self.spmtIcon)
+        # Create main window
+        self.mainWindow = MainWindow(self, imgDir)
+        self.setCentralWidget(self.mainWindow)
         # Add RPC server menu
         mainMenu = self.menuBar()
         confMenu = mainMenu.addMenu('Setup')
         self.rpcConfMenu = QAction(self.pivx_icon, 'RPC Servers config...', self)
         self.rpcConfMenu.triggered.connect(self.onEditRPCServer)
         confMenu.addAction(self.rpcConfMenu)
-        # Create main window
-        self.mainWindow = MainWindow(self, imgDir)
-        self.setCentralWidget(self.mainWindow)
+        toolsMenu = mainMenu.addMenu('Tools')
+        self.signVerifyAction = QAction('Sign/Verify message', self)
+        self.signVerifyAction.triggered.connect(self.onSignVerifyMessage)
+        toolsMenu.addAction(self.signVerifyAction)
         # Show
         self.show()
         self.activateWindow()
@@ -94,8 +103,6 @@ class App(QMainWindow):
 
 
     def closeEvent(self, *args, **kwargs):
-        # Restore output stream
-        sys.stdout = sys.__stdout__
         # Terminate the running threads.
         # Set the shutdown flag on each thread to trigger a clean shutdown of each thread.
         self.mainWindow.myRpcWd.shutdown_flag.set()
@@ -130,3 +137,11 @@ class App(QMainWindow):
         ui = ConfigureRPCservers_dlg(self)
         if ui.exec():
             printDbg("Configuring RPC Servers...")
+
+
+
+    def onSignVerifyMessage(self):
+        # Create Dialog
+        ui = SignMessage_dlg(self.mainWindow)
+        if ui.exec():
+            printDbg("Sign/Verify message...")

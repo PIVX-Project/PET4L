@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (c) 2017-2019 Random.Zebra (https://github.com/random-zebra/)
+# Distributed under the MIT software license, see the accompanying
+# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
+
 import threading
 import simplejson as json
 
@@ -178,13 +182,22 @@ class TabRewards():
             curr_utxo = 0
             percent = 0
             for u in utxos:
-                rawtx = None
                 percent = int(100 * curr_utxo / total_num_of_utxos)
-                rawtx = self.caller.rpcClient.getRawTransaction(u['txid'])
-
-                # break if raw TX is unavailable
-                if rawtx is None:
-                    return
+                # get raw TX from RPC client (only for ledger / trezor has own api)
+                if self.caller.hwModel == 0:
+                    # double check that the rpc connection is still active, else reconnect
+                    if self.caller.rpcClient is None:
+                        self.caller.updateRPCstatus(None)
+                    try:
+                        rawtx = self.caller.rpcClient.getRawTransaction(u['txid'])
+                    except Exception as e:
+                        printError(getCallerName(), getFunctionName(),
+                                   "Unable to get raw TX with hash=%s from RPC server: %s" % (
+                                       u['txid'], str(e)))
+                        # Don't save UTXO if raw TX is unavailable
+                        continue
+                else:
+                    rawtx = ""
 
                 # Save utxo to db
                 u['receiver'] = self.curr_addr
@@ -331,7 +344,7 @@ class TabRewards():
                         destination = decodedTx.get("vout")[0].get("scriptPubKey").get("addresses")[0]
                         amount = decodedTx.get("vout")[0].get("value")
                         message = '<p>Broadcast signed transaction?</p><p>Destination address:<br><b>%s</b></p>' % destination
-                        message += '<p>Amount: <b>%s</b> PIV<br>' % str(amount)
+                        message += '<p>Amount: <b>%s</b> PIV<br>' % str(round(amount / 1e8, 8))
                         message += 'Fees: <b>%s</b> PIV <br>Size: <b>%d</b> Bytes</p>' % (
                         str(round(self.currFee / 1e8, 8)), len(tx_hex) / 2)
                     except Exception as e:

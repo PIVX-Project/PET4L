@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (c) 2017-2019 Random.Zebra (https://github.com/random-zebra/)
+# Distributed under the MIT software license, see the accompanying
+# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
+
 from bitcoin import bin_hash160
 from btchip.btchip import btchip, getDongle, BTChipException
 from btchip.btchipUtils import compress_public_key, bitcoinTransaction, bitcoinInput, bitcoinOutput
@@ -12,7 +16,7 @@ from constants import MPATH_LEDGER as MPATH, MPATH_TESTNET, HW_devices
 from misc import printDbg, printException, printOK, getCallerName, getFunctionName, splitString, DisconnectedException
 from pivx_hashlib import pubkey_to_address, single_sha256
 from threads import ThreadFuns
-from utils import extract_pkh_from_locking_script, compose_tx_locking_script
+from utils import extract_pkh_from_locking_script, compose_tx_locking_script, IsPayToColdStaking
 
 
 def process_ledger_exceptions(func):
@@ -53,11 +57,13 @@ class LedgerApi(QObject):
     tx_progress = pyqtSignal(int)
     # signal: sig_progress percent - emitted by signTxSign
     sig_progress = pyqtSignal(int)
+    # signal: sig_disconnected -emitted with DisconnectedException
+    sig_disconnected = pyqtSignal(str)
 
 
     def __init__(self, *args, **kwargs):
         QObject.__init__(self, *args, **kwargs)
-        self.model = [x[0] for x in HW_devices].index("LEDGER Nano S")
+        self.model = [x[0] for x in HW_devices].index("LEDGER Nano")
         self.messages = [
             'Device not initialized.',
             'Unable to connect to the device. Please check that the PIVX app on the device is open, and try again.',
@@ -78,7 +84,7 @@ class LedgerApi(QObject):
         with self.lock:
             self.status = 0
             self.dongle = getDongle(False)
-            printOK('Ledger Nano S drivers found')
+            printOK('Ledger Nano drivers found')
             self.chip = btchip(self.dongle)
             printDbg("Ledger Initialized")
             self.status = 1
@@ -92,8 +98,9 @@ class LedgerApi(QObject):
 
 
 
-    def closeDevice(self):
+    def closeDevice(self, message=''):
         printDbg("Closing LEDGER client")
+        self.sig_disconnected.emit(message)
         self.status = 0
         with self.lock:
             if self.dongle is not None:
@@ -177,7 +184,7 @@ class LedgerApi(QObject):
 
             for o in arg_outputs:
                 output = bitcoinOutput()
-                output.script = compose_tx_locking_script(o['address'])
+                output.script = compose_tx_locking_script(o['address'], isTestnet)
                 output.amount = int.to_bytes(o['valueSat'], 8, byteorder='little')
                 self.new_transaction.outputs.append(output)
 
@@ -249,7 +256,7 @@ class LedgerApi(QObject):
         message_sha = splitString(single_sha256(message).hex(), 32);
 
         # Connection pop-up
-        mBox = QMessageBox(caller.ui)
+        mBox = QMessageBox(caller)
         warningText = "Another application (such as Ledger Wallet app) has probably taken over "
         warningText += "the communication with the Ledger device.<br><br>To continue, close that application and "
         warningText += "click the <b>Retry</b> button.\nTo cancel, click the <b>Abort</b> button"
@@ -273,10 +280,10 @@ class LedgerApi(QObject):
 
             printOK('Signing Message')
             self.mBox = QMessageBox(caller.ui)
-            messageText = "Check display of your hardware device\n\n" + "- masternode message hash:\n\n%s\n\n-path:\t%s\n" % (
+            messageText = "Check display of your hardware device\n\n- message hash:\n\n%s\n\n-path:\t%s\n" % (
             message_sha, path)
             self.mBox.setText(messageText)
-            self.mBox.setIconPixmap(caller.ui.ledgerImg.scaledToHeight(200, Qt.SmoothTransformation))
+            self.mBox.setIconPixmap(caller.ledgerImg.scaledToHeight(200, Qt.SmoothTransformation))
             self.mBox.setWindowTitle("CHECK YOUR LEDGER")
             self.mBox.setStandardButtons(QMessageBox.NoButton)
             self.mBox.show()

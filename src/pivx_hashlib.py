@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+# Copyright (c) 2017-2019 Random.Zebra (https://github.com/random-zebra/)
+# Distributed under the MIT software license, see the accompanying
+# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
+
 import bitcoin
 import hashlib
 
@@ -20,14 +24,19 @@ def generate_privkey(isTestnet=False):
     """
     Based on Andreas Antonopolous work from 'Mastering Bitcoin'.
     """
-    base58_secret = TESTNET_WIF_PREFIX if isTestnet else WIF_PREFIX
     valid = False
     privkey = 0
     while not valid:
         privkey = bitcoin.random_key()
         decoded_private_key = bitcoin.decode_privkey(privkey, 'hex')
         valid = 0 < decoded_private_key < bitcoin.N
-    data = bytes([base58_secret]) + bytes.fromhex(privkey)
+    return base58fromhex(privkey, isTestnet)
+
+
+
+def base58fromhex(hexstr, isTestnet):
+    base58_secret = TESTNET_WIF_PREFIX if isTestnet else WIF_PREFIX
+    data = bytes([base58_secret]) + bytes.fromhex(hexstr)
     checksum = bitcoin.bin_dbl_sha256(data)[0:4]
     return b58encode(data + checksum)
 

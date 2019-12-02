@@ -1,4 +1,10 @@
 /.project
 /.pydevproject
-/.settings
+/.settings/
 *.json
+/.idea/
+/build/
+/dist/
+/__pycache__/
+/venv/
+/.pytest_cache/

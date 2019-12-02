@@ -36,7 +36,10 @@ if __name__ == '__main__':
     ### --------------
 
     # Create QMainWindow Widget
-    ex = App(imgDir, args)
+    ex = App(imgDir, app, args)
+
+    ##-- Launch RPC watchdog
+    ex.mainWindow.rpc_watchdogThread.start()
 
     # Execute App
     app.exec_()
