@@ -96,6 +96,16 @@ class TabRewards():
                     self.ui.rewardsList.box.item(row, 2).setIcon(self.caller.coldStaking_icon)
                     self.ui.rewardsList.box.item(row, 2).setToolTip("Staked by <b>%s</b>" % utxo['staker'])
 
+                # make immature rewards unselectable
+                if utxo['coinstake']:
+                    required = 16 if self.caller.isTestnetRPC else 101
+                    if utxo['confirmations'] < required:
+                        for i in range(0, 4):
+                            self.ui.rewardsList.box.item(row, i).setFlags(Qt.NoItemFlags)
+                            ttip = self.ui.rewardsList.box.item(row, i).toolTip()
+                            self.ui.rewardsList.box.item(row, i).setToolTip(
+                                ttip + "\n(Immature - %d confirmations required)" % required)
+
             self.ui.rewardsList.box.resizeColumnsToContents()
 
             if len(rewards) > 0:
@@ -205,7 +215,8 @@ class TabRewards():
                 u['receiver'] = self.curr_addr
                 u['raw_tx'] = rawtx
                 u['staker'] = ""
-                if IsPayToColdStaking(rawtx, u['vout']):
+                p2cs, u['coinstake'] = IsPayToColdStaking(rawtx, u['vout'])
+                if p2cs:
                     u['staker'] = GetDelegatedStaker(rawtx, u['vout'], self.caller.isTestnetRPC)
                 self.caller.parent.db.addReward(u)
 
