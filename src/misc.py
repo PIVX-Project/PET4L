@@ -186,7 +186,7 @@ def now():
 
 
 def persistCacheSetting(cache_key, cache_value):
-    settings = QSettings('PIVX', 'SecurePivxMasternodeTool')
+    settings = QSettings('PIVX', 'PET4L')
     if not settings.contains(cache_key):
         printDbg("Cache key %s not found" % str(cache_key))
         printOK("Adding new cache key to settings...")

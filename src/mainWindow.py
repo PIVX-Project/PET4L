@@ -271,7 +271,7 @@ class MainWindow(QWidget):
 
 
     def onCheckVersion(self):
-        printDbg("Checking SPMT version...")
+        printDbg("Checking PET4L version...")
         self.versionLabel.setText("--")
         self.runInThread(self.checkVersion, (), self.updateVersion)
 
@@ -320,7 +320,7 @@ class MainWindow(QWidget):
         timestamp = strftime('%Y-%m-%d_%H-%M-%S', gmtime(now()))
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self,"Save Logs to file","SPMT_Logs_%s.txt" % timestamp,"All Files (*);; Text Files (*.txt)", options=options)
+        fileName, _ = QFileDialog.getSaveFileName(self,"Save Logs to file", "PET4L_Logs_%s.txt" % timestamp,"All Files (*);; Text Files (*.txt)", options=options)
         try:
             if fileName:
                 printOK("Saving logs to %s" % fileName)
@@ -349,7 +349,7 @@ class MainWindow(QWidget):
 
     def showHWstatus(self):
         self.updateHWleds()
-        myPopUp_sb(self, "info", 'SPMT - hw check', "%s" % self.hwStatusMess)
+        myPopUp_sb(self, "info", 'PET4L - hw check', "%s" % self.hwStatusMess)
 
 
     def showRPCstatus(self, server_index, fDebug):
@@ -357,7 +357,7 @@ class MainWindow(QWidget):
         if server_index == self.header.rpcClientsBox.currentIndex():
             self.updateRPCled(fDebug)
             if fDebug:
-                myPopUp_sb(self, "info", 'SPMT - rpc check', "%s" % self.rpcStatusMess)
+                myPopUp_sb(self, "info", 'PET4L - rpc check', "%s" % self.rpcStatusMess)
 
 
     def updateHWleds(self):

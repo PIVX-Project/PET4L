@@ -257,13 +257,13 @@ class TabRewards():
 
         # Check HW device
         if self.caller.hwStatus != 2:
-            myPopUp_sb(self.caller, "crit", 'SPMT - hw device check', "Connect to HW device first")
+            myPopUp_sb(self.caller, "crit", 'PET4L - hw device check', "Connect to HW device first")
             printDbg("Unable to connect to hardware device. The device status is: %d" % self.caller.hwStatus)
             return None
 
         # Check destination Address
         if not checkPivxAddr(self.dest_addr, self.caller.isTestnetRPC):
-            myPopUp_sb(self.caller, "crit", 'SPMT - PIVX address check', "The destination address is missing, or invalid.")
+            myPopUp_sb(self.caller, "crit", 'PET4L - PIVX address check', "The destination address is missing, or invalid.")
             return None
 
         # LET'S GO
