@@ -36,6 +36,7 @@ class TabRewards():
         ##--- Initialize GUI
         self.ui = TabRewards_gui(self.caller.imgDir)
         self.caller.tabRewards = self.ui
+        self.ui.btn_Copy.setIcon(self.caller.copy_icon)
 
         # load cache
         self.ui.destinationLine.setText(self.caller.parent.cache.get("lastAddress"))
@@ -57,6 +58,7 @@ class TabRewards():
         self.ui.swiftxCheck.clicked.connect(lambda: self.updateFee())
         self.ui.btn_sendRewards.clicked.connect(lambda: self.onSendRewards())
         self.ui.btn_Cancel.clicked.connect(lambda: self.onCancel())
+        self.ui.btn_Copy.clicked.connect(lambda: self.onCopy())
 
         # Connect Signals
         self.caller.sig_UTXOsLoading.connect(self.update_loading_utxos)
@@ -247,6 +249,20 @@ class TabRewards():
         self.suggestedFee = MINIMUM_FEE
         self.updateFee()
         self.AbortSend()
+
+
+    def onCopy(self):
+        if self.ui.addySelect.count() == 0:
+            mess = "Nothing to copy. Load/Refresh addresses first."
+            myPopUp_sb(self.caller, QMessageBox.Warning, 'PET4L - no address', mess)
+            return
+        cb = QApplication.clipboard()
+        cb.clear(mode=cb.Clipboard)
+        ct = self.ui.addySelect.currentText()
+        addy = ct.split("  --  ")[1].split("   ")[0].strip()
+        cb.setText(addy, mode=cb.Clipboard)
+        myPopUp_sb(self.caller, QMessageBox.Information, 'PET4L - copied', "address copied to the clipboard")
+
 
 
 

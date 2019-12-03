@@ -26,11 +26,8 @@ class TabRewards_gui(QWidget):
         self.setLayout(mainVertical)
 
 
-
-
     def initRewardsForm(self):
         self.rewardsForm = QGroupBox()
-        self.rewardsForm.setTitle("Transfer UTXOs")
         layout = QFormLayout()
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(13)
@@ -70,18 +67,23 @@ class TabRewards_gui(QWidget):
         self.btn_reload.setToolTip("Reload data from ledger device")
         line1.addWidget(self.btn_reload)
         layout.addRow(line1)
+        ## --- ROW 2: address and copy btn
         hBox = QHBoxLayout()
         self.addySelect = QComboBox()
         self.addySelect.setToolTip("Select Address")
         hBox.addWidget(self.addySelect)
+        self.btn_Copy = QPushButton()
+        self.btn_Copy.setMaximumWidth(45)
+        self.btn_Copy.setToolTip("Copy address to clipboard")
+        hBox.addWidget(self.btn_Copy)
         layout.addRow(hBox)
-        ## --- ROW 2: UTXOs
+        ## --- ROW 3: UTXOs
         self.rewardsList = QVBoxLayout()
         self.rewardsList.statusLabel = QLabel('<b style="color:red">Reload Rewards</b>')
         self.rewardsList.statusLabel.setVisible(True)
         self.rewardsList.addWidget(self.rewardsList.statusLabel)
         self.rewardsList.box = QTableWidget()
-        self.rewardsList.box.setMinimumHeight(200)
+        self.rewardsList.box.setMinimumHeight(230)
         #self.rewardsList.box.setMaximumHeight(140)
         self.rewardsList.box.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.rewardsList.box.setSelectionMode(QAbstractItemView.MultiSelection)
@@ -107,7 +109,6 @@ class TabRewards_gui(QWidget):
         item.setText("TX Output N")
         item.setTextAlignment(Qt.AlignCenter)
         self.rewardsList.box.setHorizontalHeaderItem(3, item)
-        item = QTableWidgetItem()
         self.rewardsList.addWidget(self.rewardsList.box)
         layout.addRow(self.rewardsList)
         ##--- ROW 3
