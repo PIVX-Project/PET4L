@@ -211,12 +211,9 @@ class TabRewards():
                     # double check that the rpc connection is still active, else reconnect
                     if self.caller.rpcClient is None:
                         self.caller.updateRPCstatus(None)
-                    try:
-                        rawtx = self.caller.rpcClient.getRawTransaction(u['txid'])
-                    except Exception as e:
-                        printError(getCallerName(), getFunctionName(),
-                                   "Unable to get raw TX with hash=%s from RPC server: %s" % (
-                                       u['txid'], str(e)))
+                    rawtx = self.caller.rpcClient.getRawTransaction(u['txid'])
+                    if rawtx is None:
+                        printDbg("Unable to get raw TX with hash=%s from RPC server." % u['txid'])
                         # Don't save UTXO if raw TX is unavailable
                         continue
                 else:
@@ -402,6 +399,7 @@ class TabRewards():
                         txid = self.caller.rpcClient.sendRawTransaction(tx_hex, self.useSwiftX())
                         if txid is None:
                             raise Exception("Unable to send TX - connection to RPC server lost.")
+                        printDbg("Transaction sent. ID: %s" % txid)
                         mess2_text = "<p>Transaction successfully sent.</p>"
                         mess2 = QMessageBox(QMessageBox.Information, 'transaction Sent', mess2_text)
                         mess2.setDetailedText(txid)
