@@ -8,9 +8,9 @@ import logging
 import os
 import signal
 
-from PyQt5.QtCore import pyqtSignal, QSettings
+from PyQt5.QtCore import pyqtSignal, QSettings, QFile, QTextStream
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QMainWindow, QAction
+from PyQt5.QtWidgets import QMainWindow, QAction, QApplication
 
 from database import Database
 from misc import printDbg, initLogs, saveCacheSettings, readCacheSettings, getVersion
@@ -50,6 +50,7 @@ class App(QMainWindow):
         # Register the signal handlers
         signal.signal(signal.SIGTERM, service_shutdown)
         signal.signal(signal.SIGINT, service_shutdown)
+        self.set_customtheme_ifneeded()
 
         # Get version and title
         self.version = getVersion()
@@ -73,6 +74,41 @@ class App(QMainWindow):
         # Initialize user interface
         self.initUI(imgDir)
 
+    def set_customtheme_ifneeded(self):
+        self.settings = settings = QSettings('PIVX', 'PET4L')
+        themeindex = settings.value("qt_theme",0)
+        use_dark_theme = themeindex == 1
+
+        # Add switcher for Qtum core style themes on electrum
+        use_qtum_theme1 = themeindex == 2
+        use_qtum_theme2 = themeindex == 3
+        use_qtum_theme3 = themeindex == 4
+        if use_dark_theme:
+            try:
+                import qdarkstyle
+                self.app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+            except BaseException as e:
+                use_dark_theme = False
+                print(f'Error setting dark theme: {repr(e)}')
+        if use_qtum_theme1:
+            try:
+                self.app.setStyleSheet(open('src/styles/theme1/app.css').read())
+            except BaseException as e:
+                use_dark_theme = False
+                print(f'Error setting Qtum theme: {repr(e)}')
+        if use_qtum_theme2:
+            try:
+                self.app.setStyleSheet(open('src/styles/theme2/app.css').read())
+            except BaseException as e:
+                use_dark_theme = False
+                print(f'Error setting Qtum theme: {repr(e)}')
+        if use_qtum_theme3:
+            try:
+                self.app.setStyleSheet(open('src/styles/theme3/app.css').read())
+            except BaseException as e:
+                use_dark_theme = False
+                print(f'Error setting Qtum theme: {repr(e)}')
+
 
     def initUI(self, imgDir):
         # Set title and geometry
@@ -84,7 +120,7 @@ class App(QMainWindow):
         self.script_icon = QIcon(os.path.join(imgDir, 'icon_script.png'))
         self.setWindowIcon(self.spmtIcon)
         # Create main window
-        self.mainWindow = MainWindow(self, imgDir)
+        self.mainWindow = MainWindow(self, imgDir,self.app)
         self.setCentralWidget(self.mainWindow)
         # Add RPC server menu
         mainMenu = self.menuBar()

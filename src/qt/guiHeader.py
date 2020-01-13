@@ -6,7 +6,7 @@
 
 import os
 
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSettings
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import QPushButton, QLabel, QGridLayout, QHBoxLayout, QComboBox, QWidget
 
@@ -34,6 +34,19 @@ class GuiHeader(QWidget):
         self.rpcLed.setToolTip("%s" % caller.rpcStatusMess)
         self.rpcLed.setPixmap(caller.ledGrayH_icon)
         self.centralBox.addWidget(self.rpcLed, 0, 3)
+        self.changeTheme = QComboBox()
+        self.changeTheme.setToolTip("Select UI Theme")
+        self.changeTheme.addItem("Light",0)
+        self.changeTheme.addItem("Dark",1)
+        self.changeTheme.addItem("PIVX Light Hybrid",2)
+        self.changeTheme.addItem("PIVX Hybrid",3)
+        self.changeTheme.addItem("PIVX Dark",4)
+        self.settings = settings = QSettings('PIVX', 'PET4L')
+        self.changeTheme.setCurrentIndex(settings.value("qt_theme",0))
+        labeltheme = QLabel("UI Theme")
+        self.centralBox.addWidget(labeltheme, 3, 0)
+        self.centralBox.addWidget(self.changeTheme, 3, 1)
+
         self.lastPingBox = QWidget()
         sp_retain = QSizePolicy()
         sp_retain.setRetainSizeWhenHidden(True)

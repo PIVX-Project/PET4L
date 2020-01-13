@@ -382,7 +382,7 @@ class TabSign_gui(QWidget):
         # row2b fromAddress/fromSpath
         row2b = QHBoxLayout()
         self.hwAccountSpingBox = QSpinBox()
-        self.hwAccountSpingBox.setFixedWidth(50)
+        self.hwAccountSpingBox.setFixedWidth(70)
         self.hwAccountSpingBox.setToolTip("account number of the hardware wallet.\nIf unsure put 0")
         self.hwAccountSpingBox.setValue(0)
         row2b.addWidget(QLabel("Account n."))

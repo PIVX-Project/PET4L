@@ -10,10 +10,10 @@ import os
 from time import strftime, gmtime
 import threading
 
-from PyQt5.QtCore import pyqtSignal, Qt, QThread
+from PyQt5.QtCore import pyqtSignal, Qt, QThread, QTextStream, QFile, QSettings
 from PyQt5.QtGui import QPixmap, QColor, QPalette, QTextCursor, QFont, QIcon
 from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QGroupBox, QVBoxLayout, \
-    QFileDialog, QTextEdit, QTabWidget, QLabel, QSplitter
+    QFileDialog, QTextEdit, QTabWidget, QLabel, QSplitter, QApplication
 
 from apiClient import ApiClient
 from constants import starting_height, DefaultCache, wqueue
@@ -45,13 +45,13 @@ class MainWindow(QWidget):
     # signal: UTXO list has been reloaded (emitted by load_utxos_thread in tabRewards)
     sig_UTXOsLoaded = pyqtSignal()
 
-    def __init__(self, parent, imgDir):
+    def __init__(self, parent, imgDir,app):
         super(QWidget, self).__init__(parent)
         self.parent = parent
         self.imgDir = imgDir
         self.runInThread = ThreadFuns.runInThread
         self.lock = threading.Lock()
-
+        self.app = app
         ###-- Create clients and statuses
         self.hwStatus = 0
         self.hwModel = 0
@@ -168,6 +168,7 @@ class MainWindow(QWidget):
         self.header.button_checkRpc.clicked.connect(lambda: self.onCheckRpc())
         self.header.button_checkHw.clicked.connect(lambda: self.onCheckHw())
         self.header.rpcClientsBox.currentIndexChanged.connect(self.onChangeSelectedRPC)
+        self.header.changeTheme.currentIndexChanged.connect(self.onChangeTheme)
         self.header.hwDevices.currentIndexChanged.connect(self.onChangeSelectedHW)
         ##-- Connect signals
         self.sig_clearRPCstatus.connect(self.clearRPCstatus)
@@ -309,10 +310,46 @@ class MainWindow(QWidget):
             self.parent.cache['selectedRPC_index'] = persistCacheSetting('cache_RPCindex',i)
             self.runInThread(self.updateRPCstatus, (True,), )
 
+    def onChangeTheme(self, i):
+        # Don't update when we are clearing the box
+        self.toggle_stylesheet(i)
+
+
 
     def onCleanConsole(self):
         self.consoleArea.clear()
 
+    def toggle_stylesheet(self,i):
+        '''
+        Toggle the stylesheet to use the desired path in the Qt resource
+        system (prefixed by `:/`) or generically (a path to a file on
+        system).
+
+        :path:      A full path to a resource or file on system
+        '''
+        #theme1 - dark
+        #theme2 hyrid
+        #theme3 pivx light
+        # get the QApplication instance,  or crash if not set
+        app = self.app
+        self.settings = settings = QSettings('PIVX', 'PET4L')
+        settings.setValue("qt_theme",i)
+        if app is None:
+            raise RuntimeError("No Qt Application found.")
+        #get path for index
+        if i == 0:
+            path = ""
+        elif i == 1:
+            import qdarkstyle
+            path = qdarkstyle.load_stylesheet_pyqt5()
+        elif i == 2:
+            path = open('src/styles/theme3/app.css').read()
+        elif i == 3:
+            path = open('src/styles/theme2/app.css').read()
+        elif i == 4:
+            path = open('src/styles/theme1/app.css').read()
+
+        app.setStyleSheet(path)
 
     def onSaveConsole(self):
         timestamp = strftime('%Y-%m-%d_%H-%M-%S', gmtime(now()))
