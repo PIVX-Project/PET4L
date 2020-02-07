@@ -12,7 +12,6 @@ from ipaddress import ip_address
 from misc import getCallerName, getFunctionName, printException, printDbg
 from pivx_b58 import b58decode
 from pivx_hashlib import wif_to_privkey, pubkey_to_address
-from pivx_parser import ParseTx
 
 
 # Bitcoin opcodes used in the application

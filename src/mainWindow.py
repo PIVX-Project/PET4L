@@ -502,3 +502,4 @@ class MainWindow(QWidget):
                 self.parent.cache['isTestnetRPC'] = persistCacheSetting('isTestnetRPC', isTestnet)
                 self.apiClient = ApiClient(isTestnet)
         self.sig_RPCstatusUpdated.emit(rpc_index, fDebug)
+
