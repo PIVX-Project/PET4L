@@ -216,16 +216,18 @@ class TabRewards():
                         printDbg("Unable to get raw TX with hash=%s from RPC server." % u['txid'])
                         # Don't save UTXO if raw TX is unavailable
                         continue
+                    u['raw_tx'] = rawtx
+                    p2cs, u['coinstake'] = IsPayToColdStaking(rawtx, u['vout'])
+                    if p2cs:
+                        u['staker'] = GetDelegatedStaker(rawtx, u['vout'], self.caller.isTestnetRPC)
                 else:
-                    rawtx = ""
+                    # block cold-staking features for Trezor
+                    u['raw_tx'] = ""
+                    u['coinstake'] = False
+                    u['staker'] = ""
 
                 # Save utxo to db
                 u['receiver'] = self.curr_addr
-                u['raw_tx'] = rawtx
-                u['staker'] = ""
-                p2cs, u['coinstake'] = IsPayToColdStaking(rawtx, u['vout'])
-                if p2cs:
-                    u['staker'] = GetDelegatedStaker(rawtx, u['vout'], self.caller.isTestnetRPC)
                 self.caller.parent.db.addReward(u)
 
                 # emit percent
