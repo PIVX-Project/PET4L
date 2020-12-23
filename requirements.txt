@@ -5,4 +5,4 @@ trezor==0.11.1
 PyQt5>=5.9,<5.14.1
 requests>=2.18.4,<=2.23
 simplejson<=3.13.2
-ecdsa<=0.13.2
+ecdsa==0.13.3
