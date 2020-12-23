@@ -40,8 +40,6 @@ class TabRewards():
 
         # load cache
         self.ui.destinationLine.setText(self.caller.parent.cache.get("lastAddress"))
-        if self.caller.parent.cache.get("useSwiftX"):
-            self.ui.swiftxCheck.setChecked(True)
         self.ui.edt_hwAccount.setValue(self.caller.parent.cache["hwAcc"])
         self.ui.edt_spathFrom.setValue(self.caller.parent.cache["spathFrom"])
         self.ui.edt_spathTo.setValue(self.caller.parent.cache["spathTo"])
@@ -55,7 +53,6 @@ class TabRewards():
         self.ui.btn_reload.clicked.connect(lambda: self.loadSelection())
         self.ui.btn_selectAllRewards.clicked.connect(lambda: self.onSelectAllRewards())
         self.ui.btn_deselectAllRewards.clicked.connect(lambda: self.onDeselectAllRewards())
-        self.ui.swiftxCheck.clicked.connect(lambda: self.updateFee())
         self.ui.btn_sendRewards.clicked.connect(lambda: self.onSendRewards())
         self.ui.btn_Cancel.clicked.connect(lambda: self.onCancel())
         self.ui.btn_Copy.clicked.connect(lambda: self.onCopy())
@@ -313,9 +310,8 @@ class TabRewards():
                 QApplication.processEvents()
                 self.currFee = self.ui.feeLine.value() * 1e8
 
-                # save last destination address and swiftxCheck to cache and persist to settings
+                # save last destination address to cache and persist to settings
                 self.caller.parent.cache["lastAddress"] = persistCacheSetting('cache_lastAddress', self.dest_addr)
-                self.caller.parent.cache["useSwiftX"] = persistCacheSetting('cache_useSwiftX', self.useSwiftX())
 
                 self.currFee = self.ui.feeLine.value() * 1e8
                 # re-connect signals
@@ -338,8 +334,7 @@ class TabRewards():
                 try:
                     self.txFinished = False
                     self.caller.hwdevice.prepare_transfer_tx(self.caller, self.curr_path, self.selectedRewards,
-                                                             self.dest_addr, self.currFee, self.useSwiftX(),
-                                                             self.caller.isTestnetRPC)
+                                                             self.dest_addr, self.currFee, self.caller.isTestnetRPC)
                 except DisconnectedException as e:
                     self.caller.hwStatus = 0
                     self.caller.updateHWleds()
@@ -398,7 +393,7 @@ class TabRewards():
 
                     reply = mess1.exec_()
                     if reply == QMessageBox.Yes:
-                        txid = self.caller.rpcClient.sendRawTransaction(tx_hex, self.useSwiftX())
+                        txid = self.caller.rpcClient.sendRawTransaction(tx_hex)
                         if txid is None:
                             raise Exception("Unable to send TX - connection to RPC server lost.")
                         printDbg("Transaction sent. ID: %s" % txid)
@@ -431,12 +426,8 @@ class TabRewards():
 
 
     def updateFee(self):
-        if self.useSwiftX():
-            self.ui.feeLine.setValue(0.01)
-            self.ui.feeLine.setEnabled(False)
-        else:
-            self.ui.feeLine.setValue(self.suggestedFee)
-            self.ui.feeLine.setEnabled(True)
+        self.ui.feeLine.setValue(self.suggestedFee)
+        self.ui.feeLine.setEnabled(True)
 
 
 
@@ -473,9 +464,4 @@ class TabRewards():
 
     def update_loading_utxos(self, percent):
         self.ui.resetStatusLabel('<em><b style="color:purple">Checking explorer... %d%%</b></em>' % percent)
-
-
-
-    def useSwiftX(self):
-        return self.ui.swiftxCheck.isChecked()
 

@@ -288,7 +288,6 @@ def readCacheSettings():
         cache["splitter_x"] = settings.value('cache_splitterX', DefaultCache["splitter_x"], type=int)
         cache["splitter_y"] = settings.value('cache_splitterY', DefaultCache["splitter_y"], type=int)
         cache["console_hidden"] = settings.value('cache_consoleHidden', DefaultCache["console_hidden"], type=bool)
-        cache["useSwiftX"] = settings.value('cache_useSwiftX', DefaultCache["useSwiftX"], type=bool)
         cache["selectedHW_index"] = settings.value('cache_HWindex', DefaultCache["selectedHW_index"], type=int)
         cache["selectedRPC_index"] = settings.value('cache_RPCindex', DefaultCache["selectedRPC_index"], type=int)
         cache["isTestnetRPC"] = settings.value('cache_isTestnetRPC', DefaultCache["isTestnetRPC"], type=bool)
@@ -310,7 +309,6 @@ def redirect_print(what):
 def saveCacheSettings(cache):
     settings = QSettings('PIVX', 'PET4L')
     settings.setValue('cache_lastAddress', cache.get('lastAddress'))
-    settings.setValue('cache_useSwiftX', cache.get('useSwiftX'))
     settings.setValue('cache_winWidth', cache.get('window_width'))
     settings.setValue('cache_winHeight', cache.get('window_height'))
     settings.setValue('cache_splitterX', cache.get('splitter_x'))

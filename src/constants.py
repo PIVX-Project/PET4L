@@ -36,7 +36,6 @@ DefaultCache = {
     "splitter_x": 342,
     "splitter_y": 133,
     "console_hidden": False,
-    "useSwiftX": False,
     "selectedHW_index": 0,
     "selectedRPC_index": 0,
     "isTestnetRPC": False,
