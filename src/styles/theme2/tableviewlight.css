@@ -1,0 +1,35 @@
+/*--------------------------------------------
+Table View light CSS
+--------------------------------------------*/
+QHeaderView{
+    color: #64497A;
+    background-color: #261a3a;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+QHeaderView:section{
+    background-color: #261a3a;
+    margin-top: 3px;
+}
+QHeaderView::down-arrow {
+    margin-top: 3px;
+}
+QHeaderView::up-arrow {
+    margin-top: 3px;
+}
+QTableView{
+    background-color: #261a3a;
+    border: 1px solid #64497A;
+    border-radius: 6px;
+}
+QScrollBar:vertical {
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+QScrollBar:horizontal {
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+QAbstractScrollArea::corner {
+    border-bottom-right-radius: 6px;
+}
