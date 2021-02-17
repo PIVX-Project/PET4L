@@ -202,6 +202,9 @@ class TabRewards():
             curr_utxo = 0
             percent = 0
             for u in utxos:
+                u['raw_tx'] = ""
+                u['coinstake'] = False
+                u['staker'] = ""
                 percent = int(100 * curr_utxo / total_num_of_utxos)
                 # get raw TX from RPC client (only for ledger / trezor has own api)
                 if self.caller.hwModel == 0:
@@ -217,11 +220,6 @@ class TabRewards():
                     p2cs, u['coinstake'] = IsPayToColdStaking(rawtx, u['vout'])
                     if p2cs:
                         u['staker'] = GetDelegatedStaker(rawtx, u['vout'], self.caller.isTestnetRPC)
-                else:
-                    # block cold-staking features for Trezor
-                    u['raw_tx'] = ""
-                    u['coinstake'] = False
-                    u['staker'] = ""
 
                 # Save utxo to db
                 u['receiver'] = self.curr_addr
