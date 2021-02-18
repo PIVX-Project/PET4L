@@ -310,15 +310,6 @@ def sec_to_time(seconds):
     return "{} days, {} hrs, {} mins, {} secs".format(days, hrs, mins, seconds)
 
 
-
-
-def splitString(text, n):
-    arr = [text[i:i+n] for i in range(0, len(text), n)]
-    return '\n'.join(arr)
-
-
-
-
 def timeThis(function, *args):
     try:
         start = time.clock()
