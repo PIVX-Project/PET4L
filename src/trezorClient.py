@@ -202,7 +202,7 @@ class TrezorApi(QObject):
                 try:
                     txes = self.load_prev_txes(tx_api, rewardsArray, skip_cache)
                     break
-                except Exception as e:
+                except:
                     if skip_cache:
                         raise
 

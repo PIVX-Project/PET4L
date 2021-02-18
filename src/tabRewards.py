@@ -311,7 +311,7 @@ class TabRewards():
                     self.txFinished = False
                     self.caller.hwdevice.prepare_transfer_tx(self.caller, self.curr_path, self.selectedRewards,
                                                              self.dest_addr, self.currFee, self.caller.isTestnetRPC)
-                except DisconnectedException as e:
+                except DisconnectedException:
                     self.caller.hwStatus = 0
                     self.caller.updateHWleds()
 
