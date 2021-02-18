@@ -99,7 +99,7 @@ def getRemotePET4Lversion():
 def getVersion():
     version_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), 'version.txt')
-    with open(version_file) as data_file:
+    with open(version_file, encoding="utf-8") as data_file:
         data = json.load(data_file)
 
     return data
