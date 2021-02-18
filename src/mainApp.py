@@ -57,7 +57,7 @@ class App(QMainWindow):
 
         # Open database
         self.db = Database(self)
-        self.db.open()
+        self.db.openDB()
 
         # Check for startup args (clear data)
         if start_args.clearAppData:
