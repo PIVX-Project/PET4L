@@ -9,7 +9,7 @@ import utils
 from pivx_hashlib import pubkeyhash_to_address
 
 
-class HexParser():
+class HexParser:
     def __init__(self, hex_str):
         self.cursor = 0
         self.hex_str = hex_str

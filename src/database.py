@@ -12,7 +12,7 @@ from constants import database_File, trusted_RPC_Servers
 from misc import printDbg, getCallerName, getFunctionName, printException
 
 
-class Database():
+class Database:
 
     '''
     class methods

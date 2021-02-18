@@ -20,7 +20,7 @@ from threads import ThreadFuns
 from utils import checkPivxAddr
 
 
-class TabRewards():
+class TabRewards:
     def __init__(self, caller):
         self.caller = caller
         # --- Lock for loading UTXO thread
