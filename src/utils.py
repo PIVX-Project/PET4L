@@ -9,7 +9,7 @@ from bitcoin import bin_hash160, b58check_to_hex, ecdsa_raw_sign, ecdsa_raw_veri
     encode_sig, decode_sig, dbl_sha256, bin_dbl_sha256, ecdsa_raw_recover, encode_pubkey
 from ipaddress import ip_address
 
-from misc import getCallerName, getFunctionName, printException, printDbg
+from misc import getCallerName, getFunctionName, printException
 from pivx_b58 import b58decode
 from pivx_hashlib import wif_to_privkey, pubkey_to_address
 

@@ -4,7 +4,7 @@
 # Distributed under the MIT software license, see the accompanying
 # file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
 
-from misc import getCallerName, getFunctionName, printException, printDbg
+from misc import getCallerName, getFunctionName, printException
 import utils
 from pivx_hashlib import pubkeyhash_to_address
 
