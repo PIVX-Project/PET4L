@@ -14,7 +14,7 @@ APPDATA_DIRNAME = ".PET4L-DATA"
 MPATH_LEDGER = "44'/77'/"
 MPATH_TREZOR = "44'/119'/"
 MPATH_TESTNET = "44'/1'/"
-WIF_PREFIX = 212 # 212 = d4
+WIF_PREFIX = 212  # 212 = d4
 MAGIC_BYTE = 30
 STAKE_MAGIC_BYTE = 63
 TESTNET_WIF_PREFIX = 239
@@ -43,7 +43,7 @@ DefaultCache = {
     "spathFrom": 0,
     "spathTo": 10,
     "intExt": 0
-    }
+}
 
 trusted_RPC_Servers = [
     ["https", "amsterdam.randomzebra.party:8080", "spmtUser_ams", "WUss6sr8956S5Paex254"],

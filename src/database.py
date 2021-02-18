@@ -159,7 +159,7 @@ class Database():
     General methods
     '''
 
-    def clearTable(self,  table_name):
+    def clearTable(self, table_name):
         printDbg("DB: Clearing table %s..." % table_name)
         cleared_RPC = False
         try:

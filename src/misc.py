@@ -29,7 +29,7 @@ QT_MESSAGE_TYPE = {
     "warn": QMessageBox.Warning,
     "crit": QMessageBox.Critical,
     "quest": QMessageBox.Question
-    }
+}
 
 
 def checkRPCstring(urlstring, action_msg="Malformed credentials"):
@@ -40,10 +40,10 @@ def checkRPCstring(urlstring, action_msg="Malformed credentials"):
         if o.netloc is None or o.netloc == '':
             raise Exception("Malformed host network location part.")
         if o.port is None or o.port == '':
-            raise  Exception("Wrong IP port number")
+            raise Exception("Wrong IP port number")
         if o.username is None:
             raise Exception("Malformed username")
-        if  o.password is None:
+        if o.password is None:
             raise Exception("Malformed password")
         return True
 
@@ -56,7 +56,7 @@ def checkRPCstring(urlstring, action_msg="Malformed credentials"):
 def clean_for_html(text):
     if text is None:
         return ""
-    return text.replace("<", "{").replace(">","}")
+    return text.replace("<", "{").replace(">", "}")
 
 
 def clear_screen():
@@ -251,7 +251,7 @@ def printOK(what):
 
 
 def splitString(text, n):
-    arr = [text[i:i+n] for i in range(0, len(text), n)]
+    arr = [text[i:i + n] for i in range(0, len(text), n)]
     return '\n'.join(arr)
 
 
@@ -301,12 +301,12 @@ def saveCacheSettings(cache):
 
 
 def sec_to_time(seconds):
-    days = seconds//86400
-    seconds -= days*86400
-    hrs = seconds//3600
-    seconds -= hrs*3600
-    mins = seconds//60
-    seconds -= mins*60
+    days = seconds // 86400
+    seconds -= days * 86400
+    hrs = seconds // 3600
+    seconds -= hrs * 3600
+    mins = seconds // 60
+    seconds -= mins * 60
     return "{} days, {} hrs, {} mins, {} secs".format(days, hrs, mins, seconds)
 
 
@@ -324,7 +324,7 @@ def timeThis(function, *args):
         start = time.clock()
         val = function(*args)
         end = time.clock()
-        return val, (end-start)
+        return val, (end - start)
     except Exception:
         return None, None
 

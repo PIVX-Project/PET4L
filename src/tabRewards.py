@@ -159,7 +159,7 @@ class TabRewards():
         self.caller.parent.cache["spathTo"] = persistCacheSetting('cache_spathTo', spathTo)
         self.caller.parent.cache["intExt"] = persistCacheSetting('cache_intExt', intExt)
 
-        for i in range(spathFrom, spathTo+1):
+        for i in range(spathFrom, spathTo + 1):
             path = "%d'/%d/%d" % (hwAcc, intExt, i)
             address = self.caller.hwdevice.scanForAddress(hwAcc, i, intExt, isTestnet)
             try:
@@ -169,7 +169,7 @@ class TabRewards():
                 balance = 0
 
             itemLine = "%s  --  %s" % (path, address)
-            if(balance):
+            if (balance):
                 itemLine += "   [%s PIV]" % str(balance)
 
             self.ui.addySelect.addItem(itemLine, [path, address, balance])
@@ -352,7 +352,7 @@ class TabRewards():
                         message = '<p>Broadcast signed transaction?</p><p>Destination address:<br><b>%s</b></p>' % destination
                         message += '<p>Amount: <b>%s</b> PIV<br>' % str(round(amount / 1e8, 8))
                         message += 'Fees: <b>%s</b> PIV <br>Size: <b>%d</b> Bytes</p>' % (
-                        str(round(self.currFee / 1e8, 8)), len(tx_hex) / 2)
+                            str(round(self.currFee / 1e8, 8)), len(tx_hex) / 2)
                     except Exception as e:
                         printException(getCallerName(), getFunctionName(), "decoding exception", str(e))
                         message = '<p>Unable to decode TX- Broadcast anyway?</p>'
@@ -410,13 +410,13 @@ class TabRewards():
                 total += int(self.selectedRewards[i].get('satoshis'))
 
             # update suggested fee and selected rewards
-            estimatedTxSize = (44+numOfInputs*148)*1.0 / 1000   # kB
+            estimatedTxSize = (44 + numOfInputs * 148) * 1.0 / 1000  # kB
             feePerKb = self.caller.rpcClient.getFeePerKb()
             self.suggestedFee = round(feePerKb * estimatedTxSize, 8)
             printDbg("estimatedTxSize is %s kB" % str(estimatedTxSize))
             printDbg("suggested fee is %s PIV (%s PIV/kB)" % (str(self.suggestedFee), str(feePerKb)))
 
-            self.ui.selectedRewardsLine.setText(str(round(total/1e8, 8)))
+            self.ui.selectedRewardsLine.setText(str(round(total / 1e8, 8)))
 
         else:
             self.ui.selectedRewardsLine.setText("")

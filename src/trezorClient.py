@@ -25,7 +25,7 @@ from threads import ThreadFuns
 from qt.dlg_pinMatrix import PinMatrix_dlg
 
 
-def  process_trezor_exceptions(func):
+def process_trezor_exceptions(func):
     def process_trezor_exceptions_int(*args, **kwargs):
         hwDevice = args[0]
         try:
@@ -61,7 +61,7 @@ class TrezorApi(QObject):
 
     def __init__(self, model, *args, **kwargs):
         QObject.__init__(self, *args, **kwargs)
-        self.model = model # index of HW_devices
+        self.model = model  # index of HW_devices
         self.messages = [
             'Trezor not initialized. Connect and unlock it',
             'Error setting up Trezor Client.',
@@ -128,7 +128,7 @@ class TrezorApi(QObject):
                 self.client.features.major_version,
                 self.client.features.minor_version,
                 self.client.features.patch_version)
-            )
+                    )
             self.status = 1
             model = self.client.features.model or "1"
             if not self.checkModel(model):
@@ -334,9 +334,9 @@ def sign_tx(sig_percent, client, coin_name, inputs, outputs, details=None, prev_
     # preload all relevant transactions ahead of time
     for inp in inputs:
         if inp.script_type not in (
-            trezor_proto.InputScriptType.SPENDP2SHWITNESS,
-            trezor_proto.InputScriptType.SPENDWITNESS,
-            trezor_proto.InputScriptType.EXTERNAL,
+                trezor_proto.InputScriptType.SPENDP2SHWITNESS,
+                trezor_proto.InputScriptType.SPENDWITNESS,
+                trezor_proto.InputScriptType.EXTERNAL,
         ):
             try:
                 prev_tx = prev_txes[inp.prev_hash]
@@ -390,7 +390,7 @@ def sign_tx(sig_percent, client, coin_name, inputs, outputs, details=None, prev_
                     raise ValueError("Signature for index %d already filled" % idx)
                 signatures[idx] = sig
                 # emit completion percent
-                percent = 10 + int(90 * (idx+1) / len(signatures))
+                percent = 10 + int(90 * (idx + 1) / len(signatures))
                 sig_percent.emit(percent)
 
         if res.request_type == R.TXFINISHED:
@@ -429,7 +429,7 @@ def sign_tx(sig_percent, client, coin_name, inputs, outputs, details=None, prev_
         elif res.request_type == R.TXEXTRADATA:
             o, l = res.details.extra_data_offset, res.details.extra_data_len
             msg = trezor_proto.TransactionType()
-            msg.extra_data = current_tx.extra_data[o : o + l]
+            msg.extra_data = current_tx.extra_data[o: o + l]
             res = client.call(trezor_proto.TxAck(tx=msg))
 
     if isinstance(res, trezor_proto.Failure):
