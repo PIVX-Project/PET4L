@@ -15,8 +15,8 @@ import threading
 from constants import DEFAULT_PROTOCOL_VERSION, MINIMUM_FEE
 from misc import getCallerName, getFunctionName, printException, printDbg, now, timeThis
 
-def process_RPC_exceptions(func):
 
+def process_RPC_exceptions(func):
     def process_RPC_exceptions_int(*args, **kwargs):
         try:
             args[0].httpConnection.connect()
@@ -35,7 +35,6 @@ def process_RPC_exceptions(func):
     return process_RPC_exceptions_int
 
 
-
 class RpcClient:
 
     def __init__(self, rpc_protocol, rpc_host, rpc_user, rpc_password):
@@ -52,9 +51,6 @@ class RpcClient:
 
         self.conn = AuthServiceProxy(self.rpc_url, timeout=1000, connection=self.httpConnection)
 
-
-
-
     @process_RPC_exceptions
     def getBlockCount(self):
         n = 0
@@ -62,8 +58,6 @@ class RpcClient:
             n = self.conn.getblockcount()
 
         return n
-
-
 
     @process_RPC_exceptions
     def getBlockHash(self, blockNum):
@@ -73,8 +67,6 @@ class RpcClient:
 
         return h
 
-
-
     @process_RPC_exceptions
     def getBudgetVotes(self, proposal):
         votes = {}
@@ -82,8 +74,6 @@ class RpcClient:
             votes = self.conn.getbudgetvotes(proposal)
 
         return votes
-
-
 
     @process_RPC_exceptions
     def getFeePerKb(self):
@@ -94,8 +84,6 @@ class RpcClient:
             res = (feePerKb if feePerKb > MINIMUM_FEE else MINIMUM_FEE)
 
         return res
-
-
 
     @process_RPC_exceptions
     def getMNStatus(self, address):
@@ -109,8 +97,6 @@ class RpcClient:
 
         return mnStatus
 
-
-
     @process_RPC_exceptions
     def getMasternodeCount(self):
         ans = None
@@ -118,8 +104,6 @@ class RpcClient:
             ans = self.conn.getmasternodecount()
 
         return ans
-
-
 
     @process_RPC_exceptions
     def getMasternodes(self):
@@ -155,8 +139,6 @@ class RpcClient:
 
         return mnList
 
-
-
     @process_RPC_exceptions
     def getNextSuperBlock(self):
         n = 0
@@ -164,9 +146,6 @@ class RpcClient:
             n = self.conn.getnextsuperblock()
 
         return n
-
-
-
 
     @process_RPC_exceptions
     def getProposalsProjection(self):
@@ -190,8 +169,6 @@ class RpcClient:
         # return proposals list
         return proposals
 
-
-
     @process_RPC_exceptions
     def getProtocolVersion(self):
         res = DEFAULT_PROTOCOL_VERSION
@@ -201,8 +178,6 @@ class RpcClient:
 
         return res
 
-
-
     @process_RPC_exceptions
     def getRawTransaction(self, txid):
         res = None
@@ -210,8 +185,6 @@ class RpcClient:
             res = self.conn.getrawtransaction(txid)
 
         return res
-
-
 
     @process_RPC_exceptions
     def getStatus(self):
@@ -232,8 +205,6 @@ class RpcClient:
 
         return status, statusMess, n, response_time, isTestnet
 
-
-
     @process_RPC_exceptions
     def isBlockchainSynced(self):
         res = False
@@ -245,8 +216,6 @@ class RpcClient:
 
         return res, response_time
 
-
-
     @process_RPC_exceptions
     def mnBudgetRawVote(self, mn_tx_hash, mn_tx_index, proposal_hash, vote, time, vote_sig):
         res = None
@@ -254,8 +223,6 @@ class RpcClient:
             res = self.conn.mnbudgetrawvote(mn_tx_hash, mn_tx_index, proposal_hash, vote, time, vote_sig)
 
         return res
-
-
 
     @process_RPC_exceptions
     def decodemasternodebroadcast(self, work):
@@ -266,8 +233,6 @@ class RpcClient:
 
         return res
 
-
-
     @process_RPC_exceptions
     def relaymasternodebroadcast(self, work):
         printDbg("RPC: Relaying masternode broadcast...")
@@ -276,8 +241,6 @@ class RpcClient:
             res = self.conn.relaymasternodebroadcast(work.strip())
 
         return res
-
-
 
     @process_RPC_exceptions
     def sendRawTransaction(self, tx_hex):
@@ -289,8 +252,6 @@ class RpcClient:
             tx_id = self.conn.sendrawtransaction(tx_hex, True)
 
         return tx_id
-
-
 
     @process_RPC_exceptions
     def verifyMessage(self, pivxaddress, signature, message):

@@ -209,4 +209,3 @@ class Ui_ConfigureRPCserversDlg(object):
         self.close_btn.clicked.connect(lambda: ConfigureRPCserversDlg.onClose())
         self.cancel_btn.clicked.connect(lambda: ConfigureRPCserversDlg.onCancel())
         self.save_btn.clicked.connect(lambda: ConfigureRPCserversDlg.onSave())
-

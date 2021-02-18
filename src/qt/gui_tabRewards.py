@@ -25,7 +25,6 @@ class TabRewards_gui(QWidget):
         mainVertical.addLayout(buttonbox)
         self.setLayout(mainVertical)
 
-
     def initRewardsForm(self):
         self.rewardsForm = QGroupBox()
         layout = QFormLayout()
@@ -159,7 +158,6 @@ class TabRewards_gui(QWidget):
         self.rewardsForm.setLayout(layout)
         #--- ROW 5
         self.btn_Cancel = QPushButton("Clear")
-
 
     def resetStatusLabel(self, message=None):
         if message is None:

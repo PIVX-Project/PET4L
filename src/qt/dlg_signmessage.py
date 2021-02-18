@@ -31,6 +31,7 @@ from pivx_hashlib import pubkey_to_address
 from threads import ThreadFuns
 from utils import checkPivxAddr, ecdsa_verify_addr
 
+
 class SignMessage_dlg(QDialog):
     def __init__(self, main_wnd):
         QDialog.__init__(self, parent=main_wnd)
@@ -72,7 +73,6 @@ class TabSign:
         self.ui.fromSpathRadioBtn.toggled.connect(lambda: self.onToggleRadio(False))
         self.ui.searchPKBtn.clicked.connect(lambda: self.onSearchPK())
 
-
     def loadAddressComboBox(self):
         comboBox = self.ui.addressComboBox
         # add generic address (bold)
@@ -82,7 +82,6 @@ class TabSign:
         comboBox.setItemData(comboBox.count() - 1, boldFont, Qt.FontRole)
         # init selection
         self.onChangeSelectedAddress()
-
 
     def displaySignature(self, sig):
         if sig == "None":
@@ -98,7 +97,6 @@ class TabSign:
             mess = "Signature doesn't verify."
             myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - no signature', mess)
 
-
     def findPubKey(self):
         device = self.main_wnd.hwdevice
 
@@ -111,7 +109,6 @@ class TabSign:
             return
         self.updateGenericAddress(pk)
 
-
     def findSpath(self, ctrl, starting_spath, spath_count):
         addy = self.ui.addressLineEdit.text().strip()
         device = self.main_wnd.hwdevice
@@ -119,7 +116,6 @@ class TabSign:
                                                            self.currIsTestnet)
         self.curr_starting_spath = starting_spath
         self.curr_spath_count = spath_count
-
 
     def findSpath_done(self):
         if self.spath_found:
@@ -138,13 +134,11 @@ class TabSign:
                 starting_spath += spath_count
                 ThreadFuns.runInThread(self.findSpath, (starting_spath, spath_count), self.findSpath_done)
 
-
     def onChangeSelectedAddress(self):
         self.currName = None
         self.ui.editBtn.setVisible(False)
         # generic address
         self.setSignEnabled(False)
-
 
     def onCopy(self):
         if self.ui.signatureTextEdt.document().isEmpty():
@@ -156,11 +150,9 @@ class TabSign:
         cb.setText(self.ui.signatureTextEdt.toPlainText(), mode=cb.Clipboard)
         myPopUp_sb(self.main_wnd, QMessageBox.Information, 'PET4L - copied', "Signature copied to the clipboard")
 
-
     def onEdit(self):
         visible = self.ui.hiddenLine.isVisible()
         self.ui.hiddenLine.setVisible(not visible)
-
 
     def onSave(self):
         if self.ui.signatureTextEdt.document().isEmpty():
@@ -182,7 +174,6 @@ class TabSign:
             err_msg = "error writing signature to file"
             printException(getCallerName(), getFunctionName(), err_msg, e.args)
         myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - NOT saved', "Signature NOT saved to file")
-
 
     def onSearchPK(self):
         fromAddress = self.ui.fromAddressRadioBtn.isChecked()
@@ -219,7 +210,6 @@ class TabSign:
             self.spath = self.ui.spathSpinBox.value()
             self.findPubKey()
 
-
     def onSign(self):
         # check message
         if self.ui.messageTextEdt.document().isEmpty():
@@ -252,11 +242,9 @@ class TabSign:
             err_msg = "Keyboard Interrupt"
             printException(getCallerName(), getFunctionName(), err_msg, '')
 
-
     def onToggleRadio(self, isFromAddress):
         self.ui.fromAddressBox.setVisible(isFromAddress)
         self.ui.fromSpathBox.setVisible(not isFromAddress)
-
 
     def setSignEnabled(self, enabled):
         self.ui.signBtn.setEnabled(enabled)
@@ -268,7 +256,6 @@ class TabSign:
                       "or the spath_id (address number) and click 'Search HW'."
             self.ui.addressLabel.setText("")
         self.ui.signBtn.setToolTip(tooltip)
-
 
     def updateGenericAddress(self, pk):
         genericAddy = pubkey_to_address(pk, self.currIsTestnet)
@@ -286,9 +273,6 @@ class TabSign:
         self.currHwPath = "%d'/0/%d" % (self.hwAcc, self.spath)
         self.ui.addressLabel.setText(self.currAddress)
         self.ui.editBtn.setVisible(True)
-
-
-
 
 
 class TabVerify:

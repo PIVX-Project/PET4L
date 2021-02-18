@@ -24,7 +24,6 @@ def add_defaultKeys_to_dict(dictObj, defaultObj):
             dictObj[key] = defaultObj[key]
 
 
-
 QT_MESSAGE_TYPE = {
     "info": QMessageBox.Information,
     "warn": QMessageBox.Warning,
@@ -54,17 +53,14 @@ def checkRPCstring(urlstring, action_msg="Malformed credentials"):
         return False
 
 
-
 def clean_for_html(text):
     if text is None:
         return ""
     return text.replace("<", "{").replace(">","}")
 
 
-
 def clear_screen():
     os.system('clear')
-
 
 
 def getCallerName(inDecorator=False):
@@ -74,7 +70,6 @@ def getCallerName(inDecorator=False):
         return sys._getframe(2).f_code.co_name
     except Exception:
         return None
-
 
 
 def getFunctionName(inDecorator=False):
@@ -101,7 +96,6 @@ def getRemotePET4Lversion():
         return "0.0.0"
 
 
-
 def getVersion():
     version_file = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), 'version.txt')
@@ -111,13 +105,11 @@ def getVersion():
     return data
 
 
-
 def getTxidTxidn(txid, txidn):
     if txid is None or txidn is None:
         return None
     else:
         return txid + '-' + str(txidn)
-
 
 
 def initLogs():
@@ -130,7 +122,6 @@ def initLogs():
                         format=format,
                         level=level
                         )
-
 
 
 def ipport(ip, port):
@@ -148,7 +139,6 @@ def ipport(ip, port):
             raise Exception("invalid IP version number")
 
 
-
 def myPopUp(parentWindow, messType, messTitle, messText, defaultButton=QMessageBox.No):
     if messType in QT_MESSAGE_TYPE:
         type = QT_MESSAGE_TYPE[messType]
@@ -158,7 +148,6 @@ def myPopUp(parentWindow, messType, messTitle, messText, defaultButton=QMessageB
     mess.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
     mess.setDefaultButton(defaultButton)
     return mess.exec_()
-
 
 
 def myPopUp_sb(parentWindow, messType, messTitle, messText, singleButton=QMessageBox.Ok):
@@ -171,7 +160,6 @@ def myPopUp_sb(parentWindow, messType, messTitle, messText, singleButton=QMessag
     return mess.exec_()
 
 
-
 def is_hex(s):
     try:
         int(s, 16)
@@ -182,7 +170,6 @@ def is_hex(s):
 
 def now():
     return int(time.time())
-
 
 
 def persistCacheSetting(cache_key, cache_value):
@@ -199,12 +186,10 @@ def persistCacheSetting(cache_key, cache_value):
     return cache_value
 
 
-
 def printDbg(what):
     logging.info(what)
     log_line = printDbg_msg(what)
     redirect_print(log_line)
-
 
 
 def printDbg_msg(what):
@@ -212,7 +197,6 @@ def printDbg_msg(what):
     timestamp = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(now()))
     log_line = '<b style="color: yellow">{}</b> : {}<br>'.format(timestamp, what)
     return log_line
-
 
 
 def printError(
@@ -223,7 +207,6 @@ def printError(
     logging.error("%s | %s | %s" % (caller_name, function_name, what))
     log_line = printException_msg(caller_name, function_name, what, None, True)
     redirect_print(log_line)
-
 
 
 def printException(
@@ -238,7 +221,6 @@ def printException(
     logging.warning("%s | %s | %s" % (caller_name, function_name, what))
     text = printException_msg(caller_name, function_name, err_msg, errargs)
     redirect_print(text)
-
 
 
 def printException_msg(
@@ -262,20 +244,15 @@ def printException_msg(
     return msg
 
 
-
-
 def printOK(what):
     logging.debug(what)
     msg = '<b style="color: #cc33ff">===> ' + what + '</b><br>'
     redirect_print(msg)
 
 
-
 def splitString(text, n):
     arr = [text[i:i+n] for i in range(0, len(text), n)]
     return '\n'.join(arr)
-
-
 
 
 def readCacheSettings():
@@ -323,7 +300,6 @@ def saveCacheSettings(cache):
     settings.setValue('cache_intExt', cache.get('intExt'))
 
 
-
 def sec_to_time(seconds):
     days = seconds//86400
     seconds -= days*86400
@@ -353,7 +329,6 @@ def timeThis(function, *args):
         return None, None
 
 
-
 class DisconnectedException(Exception):
     def __init__(self, message, hwDevice):
         # Call the base class constructor
@@ -372,7 +347,6 @@ class WriteStream(object):
 
     def flush(self):
         pass
-
 
 
 # QObject (to be run in QThread) that blocks until data is available

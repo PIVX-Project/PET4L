@@ -61,8 +61,6 @@ class TabRewards():
         self.caller.sig_UTXOsLoading.connect(self.update_loading_utxos)
         self.caller.sig_UTXOsLoaded.connect(self.display_utxos)
 
-
-
     def display_utxos(self):
         # update fee
         if self.caller.rpcConnected:
@@ -120,8 +118,6 @@ class TabRewards():
                 else:
                     self.ui.resetStatusLabel('<b style="color:red">Found no Rewards for %s</b>' % self.curr_addr)
 
-
-
     def getSelection(self):
         # Get selected rows indexes
         items = self.ui.rewardsList.box.selectedItems()
@@ -139,8 +135,6 @@ class TabRewards():
 
         return selection
 
-
-
     def loadSelection(self):
         # Check dongle
         printDbg("Checking HW device")
@@ -151,8 +145,6 @@ class TabRewards():
 
         self.ui.addySelect.clear()
         ThreadFuns.runInThread(self.loadSelection_thread, ())
-
-
 
     def loadSelection_thread(self, ctrl):
         hwAcc = self.ui.edt_hwAccount.value()
@@ -181,8 +173,6 @@ class TabRewards():
                 itemLine += "   [%s PIV]" % str(balance)
 
             self.ui.addySelect.addItem(itemLine, [path, address, balance])
-
-
 
     def load_utxos_thread(self, ctrl):
         with self.Lock:
@@ -234,8 +224,6 @@ class TabRewards():
             self.utxoLoaded = True
             self.caller.sig_UTXOsLoaded.emit()
 
-
-
     def onCancel(self):
         self.ui.rewardsList.box.clearSelection()
         self.selectedRewards = None
@@ -243,7 +231,6 @@ class TabRewards():
         self.suggestedFee = MINIMUM_FEE
         self.updateFee()
         self.AbortSend()
-
 
     def onCopy(self):
         if self.ui.addySelect.count() == 0:
@@ -257,9 +244,6 @@ class TabRewards():
         cb.setText(addy, mode=cb.Clipboard)
         myPopUp_sb(self.caller, QMessageBox.Information, 'PET4L - copied', "address copied to the clipboard")
 
-
-
-
     def onChangeSelected(self):
         if self.ui.addySelect.currentIndex() >= 0:
             self.ui.resetStatusLabel()
@@ -270,19 +254,13 @@ class TabRewards():
             if self.curr_balance is not None:
                 self.runInThread = ThreadFuns.runInThread(self.load_utxos_thread, (), self.display_utxos)
 
-
-
     def onSelectAllRewards(self):
         self.ui.rewardsList.box.selectAll()
         self.updateSelection()
 
-
-
     def onDeselectAllRewards(self):
         self.ui.rewardsList.box.clearSelection()
         self.updateSelection()
-
-
 
     def onSendRewards(self):
         self.dest_addr = self.ui.destinationLine.text().strip()
@@ -347,14 +325,9 @@ class TabRewards():
         else:
             myPopUp_sb(self.caller, "warn", 'Transaction NOT sent', "No UTXO to send")
 
-
-
     def removeSpentRewards(self):
         for utxo in self.selectedRewards:
             self.caller.parent.db.deleteReward(utxo['txid'], utxo['vout'])
-
-
-
 
     # Activated by signal sigTxdone from hwdevice
     def FinishSend(self, serialized_tx, amount_to_send):
@@ -413,28 +386,20 @@ class TabRewards():
                 err_msg = "Exception in FinishSend"
                 printException(getCallerName(), getFunctionName(), err_msg, e.args)
 
-
-
     # Activated by signal sigTxabort from hwdevice
     def AbortSend(self):
         self.ui.loadingLine.hide()
         self.ui.loadingLinePercent.setValue(0)
         self.ui.loadingLinePercent.hide()
 
-
-
     def updateFee(self):
         self.ui.feeLine.setValue(self.suggestedFee)
         self.ui.feeLine.setEnabled(True)
-
-
 
     # Activated by signal tx_progress from hwdevice
     def updateProgressPercent(self, percent):
         self.ui.loadingLinePercent.setValue(percent)
         QApplication.processEvents()
-
-
 
     def updateSelection(self, clicked_item=None):
         total = 0
@@ -458,8 +423,5 @@ class TabRewards():
 
         self.updateFee()
 
-
-
     def update_loading_utxos(self, percent):
         self.ui.resetStatusLabel('<em><b style="color:purple">Checking explorer... %d%%</b></em>' % percent)
-

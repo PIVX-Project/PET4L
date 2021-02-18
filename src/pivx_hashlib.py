@@ -11,14 +11,13 @@ from constants import WIF_PREFIX, MAGIC_BYTE, TESTNET_WIF_PREFIX, TESTNET_MAGIC_
     STAKE_MAGIC_BYTE, TESTNET_STAKE_MAGIC_BYTE
 from pivx_b58 import b58encode, b58decode
 
+
 def double_sha256(data):
     return hashlib.sha256(hashlib.sha256(data).digest()).digest()
 
 
-
 def single_sha256(data):
     return hashlib.sha256(data).digest()
-
 
 
 def generate_privkey(isTestnet=False):
@@ -34,7 +33,6 @@ def generate_privkey(isTestnet=False):
     return base58fromhex(privkey, isTestnet)
 
 
-
 def base58fromhex(hexstr, isTestnet):
     base58_secret = TESTNET_WIF_PREFIX if isTestnet else WIF_PREFIX
     data = bytes([base58_secret]) + bytes.fromhex(hexstr)
@@ -42,12 +40,10 @@ def base58fromhex(hexstr, isTestnet):
     return b58encode(data + checksum)
 
 
-
 def pubkey_to_address(pubkey, isTestnet=False, isCold=False):
     pubkey_bin = bytes.fromhex(pubkey)
     pkey_hash = bitcoin.bin_hash160(pubkey_bin)
     return pubkeyhash_to_address(pkey_hash, isTestnet, isCold)
-
 
 
 def pubkeyhash_to_address(pkey_hash, isTestnet=False, isCold=False):
@@ -58,8 +54,6 @@ def pubkeyhash_to_address(pkey_hash, isTestnet=False, isCold=False):
     data = bytes([base58_secret]) + pkey_hash
     checksum = bitcoin.bin_dbl_sha256(data)[0:4]
     return b58encode(data + checksum)
-
-
 
 
 def wif_to_privkey(string):

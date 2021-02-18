@@ -12,8 +12,10 @@ from PyQt5.QtCore import QThread
 
 from misc import printError
 
+
 class CtrlObject(object):
     pass
+
 
 class WorkerThread(QThread):
     """
