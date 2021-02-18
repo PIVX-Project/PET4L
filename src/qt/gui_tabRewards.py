@@ -31,7 +31,7 @@ class TabRewards_gui(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(13)
         layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
-        ##--- ROW 1
+        # --- ROW 1
         line1 = QHBoxLayout()
         line1.addWidget(QLabel("Account HW"))
         self.edt_hwAccount = QSpinBox()
@@ -66,7 +66,7 @@ class TabRewards_gui(QWidget):
         self.btn_reload.setToolTip("Reload data from ledger device")
         line1.addWidget(self.btn_reload)
         layout.addRow(line1)
-        ## --- ROW 2: address and copy btn
+        #  --- ROW 2: address and copy btn
         hBox = QHBoxLayout()
         self.addySelect = QComboBox()
         self.addySelect.setToolTip("Select Address")
@@ -76,14 +76,14 @@ class TabRewards_gui(QWidget):
         self.btn_Copy.setToolTip("Copy address to clipboard")
         hBox.addWidget(self.btn_Copy)
         layout.addRow(hBox)
-        ## --- ROW 3: UTXOs
+        #  --- ROW 3: UTXOs
         self.rewardsList = QVBoxLayout()
         self.rewardsList.statusLabel = QLabel('<b style="color:red">Reload Rewards</b>')
         self.rewardsList.statusLabel.setVisible(True)
         self.rewardsList.addWidget(self.rewardsList.statusLabel)
         self.rewardsList.box = QTableWidget()
         self.rewardsList.box.setMinimumHeight(230)
-        #self.rewardsList.box.setMaximumHeight(140)
+        # self.rewardsList.box.setMaximumHeight(140)
         self.rewardsList.box.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.rewardsList.box.setSelectionMode(QAbstractItemView.MultiSelection)
         self.rewardsList.box.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -110,7 +110,7 @@ class TabRewards_gui(QWidget):
         self.rewardsList.box.setHorizontalHeaderItem(3, item)
         self.rewardsList.addWidget(self.rewardsList.box)
         layout.addRow(self.rewardsList)
-        ##--- ROW 3
+        # --- ROW 3
         hBox2 = QHBoxLayout()
         self.btn_selectAllRewards = QPushButton("Select All")
         self.btn_selectAllRewards.setToolTip("Select all available UTXOs")
@@ -126,7 +126,7 @@ class TabRewards_gui(QWidget):
         hBox2.addWidget(self.selectedRewardsLine)
         hBox2.addStretch(1)
         layout.addRow(hBox2)
-        ##--- ROW 4
+        # --- ROW 4
         hBox3 = QHBoxLayout()
         self.destinationLine = QLineEdit()
         self.destinationLine.setToolTip("PIVX address to send PIV to")
@@ -154,9 +154,9 @@ class TabRewards_gui(QWidget):
         self.loadingLine.hide()
         self.loadingLinePercent.hide()
         layout.addRow(hBox4)
-        #--- Set Layout
+        # --- Set Layout
         self.rewardsForm.setLayout(layout)
-        #--- ROW 5
+        # --- ROW 5
         self.btn_Cancel = QPushButton("Clear")
 
     def resetStatusLabel(self, message=None):

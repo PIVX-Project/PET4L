@@ -51,7 +51,7 @@ class MainWindow(QWidget):
         self.runInThread = ThreadFuns.runInThread
         self.lock = threading.Lock()
 
-        ###-- Create clients and statuses
+        # -- Create clients and statuses
         self.hwStatus = 0
         self.hwModel = 0
         self.hwStatusMess = "Not Connected"
@@ -63,33 +63,33 @@ class MainWindow(QWidget):
         # Changes when an RPC client is connected (affecting API client)
         self.isTestnetRPC = self.parent.cache['isTestnetRPC']
 
-        ###-- Load icons & images
+        # -- Load icons & images
         self.loadIcons()
-        ###-- Create main layout
+        # -- Create main layout
         self.layout = QVBoxLayout()
         self.header = GuiHeader(self)
         self.initConsole()
         self.layout.addWidget(self.header)
 
-        ##-- Load RPC Servers list (init selection and self.isTestnet)
+        # -- Load RPC Servers list (init selection and self.isTestnet)
         self.updateRPClist()
 
-        ##-- Init HW selection
+        # -- Init HW selection
         self.header.hwDevices.setCurrentIndex(self.parent.cache['selectedHW_index'])
 
-        ##-- init HW Client
+        # -- init HW Client
         self.hwdevice = HWdevice(self)
 
-        ##-- init Api Client
+        # -- init Api Client
         self.apiClient = ApiClient(self.isTestnetRPC)
 
-        ###-- Create Queue to redirect stdout
+        # -- Create Queue to redirect stdout
         self.queue = wqueue
 
-        ###-- Init last logs
+        # -- Init last logs
         logging.debug("STARTING PET4L")
 
-        ###-- Create the thread to update console log for stdout
+        # -- Create the thread to update console log for stdout
         self.consoleLogThread = QThread()
         self.myWSReceiver = WriteStreamReceiver(self.queue)
         self.myWSReceiver.mysignal.connect(self.append_to_console)
@@ -98,14 +98,14 @@ class MainWindow(QWidget):
         self.consoleLogThread.start()
         printDbg("Console Log thread started")
 
-        ###-- Initialize tabs (single QLayout here)
+        # -- Initialize tabs (single QLayout here)
         self.tabs = QTabWidget()
         self.t_rewards = TabRewards(self)
-        ###-- Add tabs
+        # -- Add tabs
         self.tabs.addTab(self.tabRewards, self.parent.spmtIcon, "Spend")
-        ###-- Draw Tabs
+        # -- Draw Tabs
         self.splitter = QSplitter(Qt.Vertical)
-        ###-- Add tabs and console to Layout
+        # -- Add tabs and console to Layout
         self.splitter.addWidget(self.tabs)
         self.splitter.addWidget(self.console)
         self.splitter.setStretchFactor(0,0)
@@ -113,22 +113,22 @@ class MainWindow(QWidget):
         self.splitter.setSizes([2,1])
         self.layout.addWidget(self.splitter)
 
-        ###-- Set Layout
+        # -- Set Layout
         self.setLayout(self.layout)
 
-        ###-- Init Settings
+        # -- Init Settings
         self.initSettings()
 
-        ###-- Connect buttons/signals
+        # -- Connect buttons/signals
         self.connButtons()
 
-        ###-- Create RPC Whatchdog
+        # -- Create RPC Whatchdog
         self.rpc_watchdogThread = QThread()
         self.myRpcWd = RpcWatchdog(self)
         self.myRpcWd.moveToThread(self.rpc_watchdogThread)
         self.rpc_watchdogThread.started.connect(self.myRpcWd.run)
 
-        ###-- Let's go
+        # -- Let's go
         self.mnode_to_change = None
         printOK("Hello! Welcome to " + parent.title)
 
@@ -160,7 +160,7 @@ class MainWindow(QWidget):
         self.header.button_checkHw.clicked.connect(lambda: self.onCheckHw())
         self.header.rpcClientsBox.currentIndexChanged.connect(self.onChangeSelectedRPC)
         self.header.hwDevices.currentIndexChanged.connect(self.onChangeSelectedHW)
-        ##-- Connect signals
+        # -- Connect signals
         self.sig_clearRPCstatus.connect(self.clearRPCstatus)
         self.sig_RPCstatusUpdated.connect(self.showRPCstatus)
         self.parent.sig_changed_rpcServers.connect(self.updateRPClist)
@@ -216,7 +216,7 @@ class MainWindow(QWidget):
 
     def initSettings(self):
         self.splitter.setSizes([self.parent.cache.get("splitter_x"), self.parent.cache.get("splitter_y")])
-        ###-- Hide console if it was previously hidden
+        # -- Hide console if it was previously hidden
         if self.parent.cache.get("console_hidden"):
             self.onToggleConsole()
 
