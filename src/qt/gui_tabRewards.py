@@ -6,11 +6,13 @@
 
 import sys
 import os.path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+
 from PyQt5.QtCore import Qt
 from PyQt5.Qt import QLabel, QFormLayout, QDoubleSpinBox, QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QSpinBox
 from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QGroupBox, QVBoxLayout
 from PyQt5.QtWidgets import QLineEdit, QComboBox, QProgressBar
+
+sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 
 class TabRewards_gui(QWidget):
