@@ -10,7 +10,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PET4L')
     parser.add_argument('--clearAppData', dest='clearAppData', action='store_true',
                         help='clear all previously saved application data')
+    parser.add_argument('--clearTxCache', dest='clearTxCache', action='store_true',
+                        help='clear raw transactions cache')
     parser.set_defaults(clearAppData=False)
+    parser.set_defaults(clearTxCache=False)
     args = parser.parse_args()
 
     if getattr(sys, 'frozen', False):

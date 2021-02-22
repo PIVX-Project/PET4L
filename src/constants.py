@@ -7,7 +7,7 @@
 import os
 from queue import Queue
 
-wqueue = Queue()  # type: Queue[int]
+wqueue = Queue()  # type: Queue[str]
 
 APPDATA_DIRNAME = ".PET4L-DATA"
 

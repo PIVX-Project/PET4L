@@ -251,7 +251,7 @@ class TabRewards:
 
     def onSendRewards(self):
         self.dest_addr = self.ui.destinationLine.text().strip()
-        self.fee = self.ui.feeLine.value() * 1e8
+        self.currFee = self.ui.feeLine.value() * 1e8
 
         # Check HW device
         while self.caller.hwStatus != 2:
@@ -330,14 +330,14 @@ class TabRewards:
                                                          self.curr_path,
                                                          self.selectedRewards,
                                                          self.dest_addr,
-                                                         self.fee,
+                                                         self.currFee,
                                                          self.caller.isTestnetRPC)
             else:
                 # bulk send
                 self.caller.hwdevice.prepare_transfer_tx_bulk(self.caller,
                                                               inputs,
                                                               self.dest_addr,
-                                                              self.fee,
+                                                              self.currFee,
                                                               self.caller.isTestnetRPC)
 
         except DisconnectedException:

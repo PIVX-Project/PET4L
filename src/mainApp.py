@@ -65,11 +65,15 @@ class App(QMainWindow):
             settings = QSettings('PIVX', 'PET4L')
             settings.clear()
 
+        if start_args.clearTxCache:
+            self.db.clearTable('RAWTXES')
+
         # Clear DB
         self.db.clearTable('UTXOS')
 
-        # Clear raw txes updated earlier than two months ago
-        self.db.clearRawTxes(time() - SECONDS_IN_2_MONTHS)
+        # Remove raw txes updated earlier than two months ago (if not already cleared)
+        if not start_args.clearTxCache:
+            self.db.clearRawTxes(time() - SECONDS_IN_2_MONTHS)
 
         # Read cached app data
         self.cache = readCacheSettings()
