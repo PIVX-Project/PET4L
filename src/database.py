@@ -130,8 +130,11 @@ class Database:
             # Tables for Utxos
             cursor.execute("CREATE TABLE IF NOT EXISTS UTXOS("
                            " tx_hash TEXT, tx_ouput_n INTEGER, satoshis INTEGER, confirmations INTEGER,"
-                           " script TEXT, raw_tx TEXT, receiver TEXT, staker TEXT, coinstake BOOLEAN,"
+                           " script TEXT, receiver TEXT, staker TEXT, coinstake BOOLEAN,"
                            " PRIMARY KEY (tx_hash, tx_ouput_n))")
+
+            cursor.execute("CREATE TABLE IF NOT EXISTS RAWTXES("
+                           " tx_hash TEXT PRIMARY KEY,  rawtx TEXT, lastfetch INTEGER)")
 
             printDbg("DB: Tables initialized")
 
@@ -310,10 +313,9 @@ class Database:
             utxo['satoshis'] = row[2]
             utxo['confirmations'] = row[3]
             utxo['script'] = row[4]
-            utxo['raw_tx'] = row[5]
-            utxo['receiver'] = row[6]
+            utxo['receiver'] = row[5]
+            utxo['coinstake'] = row[6]
             utxo['staker'] = row[7]
-            utxo['coinstake'] = row[8]
             # add to list
             rewards.append(utxo)
 
@@ -324,10 +326,10 @@ class Database:
         try:
             cursor = self.getCursor()
 
-            cursor.execute("INSERT INTO UTXOS "
-                           "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            cursor.execute("INSERT OR REPLACE INTO UTXOS "
+                           "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
                            (utxo['txid'], utxo['vout'], utxo['satoshis'], utxo['confirmations'],
-                            utxo['script'], utxo['raw_tx'], utxo['receiver'], utxo['staker'], utxo['coinstake'])
+                            utxo['script'], utxo['receiver'], utxo['coinstake'], utxo['staker'])
                            )
 
         except Exception as e:
@@ -365,7 +367,9 @@ class Database:
         finally:
             self.releaseCursor()
 
-        return self.rewards_from_rows(rows)[0]
+        if len(rows) > 0:
+            return self.rewards_from_rows(rows)[0]
+        return None
 
     def getRewardsList(self, receiver=None):
         try:
@@ -387,3 +391,87 @@ class Database:
             self.releaseCursor()
 
         return self.rewards_from_rows(rows)
+
+    """
+    txes methods
+    """
+
+    def txes_from_rows(self, rows):
+        txes = []
+
+        for row in rows:
+            # fetch tx item
+            tx = {}
+            tx['txid'] = row[0]
+            tx['rawtx'] = row[1]
+            # add to list
+            txes.append(tx)
+
+        return txes
+
+
+    def addRawTx(self, tx_hash, rawtx, lastfetch=0):
+        logging.debug("DB: Adding rawtx for %s" % tx_hash)
+        try:
+            cursor = self.getCursor()
+
+            cursor.execute("INSERT OR REPLACE INTO RAWTXES "
+                           "VALUES (?, ?, ?)",
+                           (tx_hash, rawtx, lastfetch)
+                           )
+
+        except Exception as e:
+            err_msg = 'error adding rawtx to DB'
+            printException(getCallerName(), getFunctionName(), err_msg, e)
+
+        finally:
+            self.releaseCursor()
+
+
+    def deleteRawTx(self, tx_hash):
+        logging.debug("DB: Deleting rawtx for %s" % tx_hash)
+        try:
+            cursor = self.getCursor()
+            cursor.execute("DELETE FROM RAWTXES WHERE tx_hash = ?", (tx_hash, ))
+
+        except Exception as e:
+            err_msg = 'error deleting rawtx from DB'
+            printException(getCallerName(), getFunctionName(), err_msg, e.args)
+        finally:
+            self.releaseCursor(vacuum=True)
+
+
+    def getRawTx(self, tx_hash):
+        logging.debug("DB: Getting rawtx for %s" % tx_hash)
+        try:
+            cursor = self.getCursor()
+
+            cursor.execute("SELECT * FROM RAWTXES"
+                           " WHERE tx_hash = ?", (tx_hash, ))
+            rows = cursor.fetchall()
+
+        except Exception as e:
+            err_msg = 'error getting raw tx for %s' % tx_hash
+            printException(getCallerName(), getFunctionName(), err_msg, e)
+            rows = []
+        finally:
+            self.releaseCursor()
+
+        if len(rows) > 0:
+            return self.txes_from_rows(rows)[0]
+        return None
+
+    def clearRawTxes(self, minTime):
+        '''
+        removes txes with lastfetch older than mintime
+        '''
+        printDbg("Pruning table RAWTXES")
+        try:
+            cursor = self.getCursor()
+            cursor.execute("DELETE FROM RAWTXES WHERE lastfetch < ?", (minTime, ))
+
+        except Exception as e:
+            err_msg = 'error deleting rawtx from DB'
+            printException(getCallerName(), getFunctionName(), err_msg, e.args)
+        finally:
+            self.releaseCursor(vacuum=True)

@@ -13,10 +13,11 @@ from PyQt5.QtWidgets import QMessageBox, QTableWidgetItem, QHeaderView
 
 from constants import MINIMUM_FEE
 from misc import printDbg, printError, printException, getCallerName, getFunctionName, \
-    persistCacheSetting, myPopUp_sb, DisconnectedException
+    persistCacheSetting, myPopUp, myPopUp_sb, DisconnectedException
 from pivx_parser import ParseTx, IsPayToColdStaking, GetDelegatedStaker
 from qt.gui_tabRewards import TabRewards_gui
 from threads import ThreadFuns
+from txCache import TxCache
 from utils import checkPivxAddr
 
 
@@ -28,7 +29,6 @@ class TabRewards:
         self.Lock = threading.Lock()
 
         # --- Initialize Selection
-        self.utxoLoaded = False
         self.selectedRewards = None
         self.feePerKb = MINIMUM_FEE
         self.suggestedFee = MINIMUM_FEE
@@ -59,7 +59,6 @@ class TabRewards:
 
         # Connect Signals
         self.caller.sig_UTXOsLoading.connect(self.update_loading_utxos)
-        self.caller.sig_UTXOsLoaded.connect(self.display_utxos)
 
     def display_utxos(self):
         # update fee
@@ -179,7 +178,6 @@ class TabRewards:
             # clear utxos DB
             printDbg("Updating UTXOs...")
             self.caller.parent.db.clearTable('UTXOS')
-            self.utxoLoaded = False
 
             if not self.caller.rpcConnected:
                 printError(getCallerName(), getFunctionName(), 'PIVX daemon not connected - Unable to update UTXO list')
@@ -188,41 +186,30 @@ class TabRewards:
             utxos = self.caller.apiClient.getAddressUtxos(self.curr_addr)
             total_num_of_utxos = len(utxos)
 
-            # Get raw transactions
             curr_utxo = 0
-            percent = 0
             for u in utxos:
-                u['raw_tx'] = ""
-                u['coinstake'] = False
+                u['receiver'] = self.curr_addr
+                # Get raw tx
+                u['rawtx'] = TxCache(self.caller)[u['txid']]
+                if u['rawtx'] is None:
+                    printDbg("Unable to get raw TX with hash=%s from RPC server." % u['txid'])
+                    # Don't save UTXO if raw TX is unavailable
+                    utxos.remove(u)
                 u['staker'] = ""
-                percent = int(100 * curr_utxo / total_num_of_utxos)
-                # get raw TX from RPC client (only for ledger / trezor has own api)
-                if self.caller.hwModel == 0:
-                    # double check that the rpc connection is still active, else reconnect
-                    if self.caller.rpcClient is None:
-                        self.caller.updateRPCstatus(None)
-                    rawtx = self.caller.rpcClient.getRawTransaction(u['txid'])
-                    if rawtx is None:
-                        printDbg("Unable to get raw TX with hash=%s from RPC server." % u['txid'])
-                        # Don't save UTXO if raw TX is unavailable
-                        continue
-                    u['raw_tx'] = rawtx
-                    p2cs, u['coinstake'] = IsPayToColdStaking(rawtx, u['vout'])
-                    if p2cs:
-                        u['staker'] = GetDelegatedStaker(rawtx, u['vout'], self.caller.isTestnetRPC)
+                p2cs, u['coinstake'] = IsPayToColdStaking(u['rawtx'], u['vout'])
+                if p2cs:
+                    u['staker'] = GetDelegatedStaker(u['rawtx'], u['vout'], self.caller.isTestnetRPC)
 
                 # Save utxo to db
-                u['receiver'] = self.curr_addr
                 self.caller.parent.db.addReward(u)
 
                 # emit percent
+                percent = int(100 * curr_utxo / total_num_of_utxos)
                 self.caller.sig_UTXOsLoading.emit(percent)
                 curr_utxo += 1
 
-            self.caller.sig_UTXOsLoading.emit(100)
             printDbg("--# REWARDS table updated")
-            self.utxoLoaded = True
-            self.caller.sig_UTXOsLoaded.emit()
+            self.caller.sig_UTXOsLoading.emit(100)
 
     def onCancel(self):
         self.ui.rewardsList.box.clearSelection()
@@ -266,6 +253,13 @@ class TabRewards:
         self.dest_addr = self.ui.destinationLine.text().strip()
 
         # Check HW device
+        while self.caller.hwStatus != 2:
+            mess = "HW device not connected. Try to connect?"
+            ans = myPopUp(self.caller, QMessageBox.Question, 'PET4L - hw check', mess)
+            if ans == QMessageBox.No:
+                return
+            # re connect
+            self.caller.onCheckHw()
         if self.caller.hwStatus != 2:
             myPopUp_sb(self.caller, "crit", 'PET4L - hw device check', "Connect to HW device first")
             printDbg("Unable to connect to hardware device. The device status is: %d" % self.caller.hwStatus)
@@ -276,54 +270,52 @@ class TabRewards:
             myPopUp_sb(self.caller, "crit", 'PET4L - PIVX address check', "The destination address is missing, or invalid.")
             return None
 
-        # LET'S GO
-        if self.selectedRewards:
-            printDbg("Sending from PIVX address  %s  to PIVX address  %s " % (self.curr_addr, self.dest_addr))
-            printDbg("Preparing transaction. Please wait...")
-            try:
-                self.ui.loadingLine.show()
-                self.ui.loadingLinePercent.show()
-                QApplication.processEvents()
-                self.currFee = self.ui.feeLine.value() * 1e8
-
-                # save last destination address to cache and persist to settings
-                self.caller.parent.cache["lastAddress"] = persistCacheSetting('cache_lastAddress', self.dest_addr)
-
-                self.currFee = self.ui.feeLine.value() * 1e8
-                # re-connect signals
-                try:
-                    self.caller.hwdevice.api.sigTxdone.disconnect()
-                except:
-                    pass
-                try:
-                    self.caller.hwdevice.api.sigTxabort.disconnect()
-                except:
-                    pass
-                try:
-                    self.caller.hwdevice.api.tx_progress.disconnect()
-                except:
-                    pass
-                self.caller.hwdevice.api.sigTxdone.connect(self.FinishSend)
-                self.caller.hwdevice.api.sigTxabort.connect(self.AbortSend)
-                self.caller.hwdevice.api.tx_progress.connect(self.updateProgressPercent)
-
-                try:
-                    self.txFinished = False
-                    self.caller.hwdevice.prepare_transfer_tx(self.caller, self.curr_path, self.selectedRewards,
-                                                             self.dest_addr, self.currFee, self.caller.isTestnetRPC)
-                except DisconnectedException:
-                    self.caller.hwStatus = 0
-                    self.caller.updateHWleds()
-
-                except Exception as e:
-                    err_msg = "Error while preparing transaction. <br>"
-                    err_msg += "Probably Blockchain wasn't synced when trying to fetch raw TXs.<br>"
-                    err_msg += "<b>Wait for full synchronization</b> then hit 'Clear/Reload'"
-                    printException(getCallerName(), getFunctionName(), err_msg, e.args)
-            except Exception as e:
-                print(e)
-        else:
+        if len(self.selectedRewards) == 0:
             myPopUp_sb(self.caller, "warn", 'Transaction NOT sent', "No UTXO to send")
+            return None
+
+        # LET'S GO
+        printDbg("Sending from PIVX address  %s  to PIVX address  %s " % (self.curr_addr, self.dest_addr))
+        self.ui.rewardsList.statusLabel.hide()
+        printDbg("Preparing transaction. Please wait...")
+        self.ui.loadingLine.show()
+        self.ui.loadingLinePercent.show()
+        QApplication.processEvents()
+
+        # save last destination address and swiftxCheck to cache and persist to settings
+        self.caller.parent.cache["lastAddress"] = persistCacheSetting('cache_lastAddress', self.dest_addr)
+
+        self.currFee = self.ui.feeLine.value() * 1e8
+        # re-connect signals
+        try:
+            self.caller.hwdevice.api.sigTxdone.disconnect()
+        except:
+            pass
+        try:
+            self.caller.hwdevice.api.sigTxabort.disconnect()
+        except:
+            pass
+        try:
+            self.caller.hwdevice.api.tx_progress.disconnect()
+        except:
+            pass
+        self.caller.hwdevice.api.sigTxdone.connect(self.FinishSend)
+        self.caller.hwdevice.api.sigTxabort.connect(self.AbortSend)
+        self.caller.hwdevice.api.tx_progress.connect(self.updateProgressPercent)
+
+        try:
+            self.txFinished = False
+            self.caller.hwdevice.prepare_transfer_tx(self.caller, self.curr_path, self.selectedRewards, self.dest_addr, self.currFee, self.caller.isTestnetRPC)
+
+        except DisconnectedException:
+            self.caller.hwStatus = 0
+            self.caller.updateHWleds()
+
+        except Exception as e:
+            err_msg = "Error while preparing transaction. <br>"
+            err_msg += "Probably Blockchain wasn't synced when trying to fetch raw TXs.<br>"
+            err_msg += "<b>Wait for full synchronization</b> then hit 'Load/Refresh'"
+            printException(getCallerName(), getFunctionName(), err_msg, e.args)
 
     def removeSpentRewards(self):
         for utxo in self.selectedRewards:
@@ -424,4 +416,9 @@ class TabRewards:
         self.updateFee()
 
     def update_loading_utxos(self, percent):
-        self.ui.resetStatusLabel('<em><b style="color:purple">Checking explorer... %d%%</b></em>' % percent)
+        if percent < 100:
+            self.ui.resetStatusLabel('<em><b style="color:purple">Checking explorer... %d%%</b></em>' % percent)
+        else:
+            self.display_utxos()
+
+

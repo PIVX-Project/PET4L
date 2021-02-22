@@ -41,8 +41,6 @@ class MainWindow(QWidget):
     # signal: UTXO list loading percent (emitted by load_utxos_thread in tabRewards)
     sig_UTXOsLoading = pyqtSignal(int)
 
-    # signal: UTXO list has been reloaded (emitted by load_utxos_thread in tabRewards)
-    sig_UTXOsLoaded = pyqtSignal()
 
     def __init__(self, parent, imgDir):
         super(QWidget, self).__init__(parent)

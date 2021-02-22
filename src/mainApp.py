@@ -11,11 +11,12 @@ import signal
 from PyQt5.QtCore import pyqtSignal, QSettings
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QMainWindow, QAction
+from time import time
 
 from database import Database
 from misc import printDbg, initLogs, saveCacheSettings, readCacheSettings, getVersion
 from mainWindow import MainWindow
-from constants import user_dir
+from constants import user_dir, SECONDS_IN_2_MONTHS
 from qt.dlg_configureRPCservers import ConfigureRPCservers_dlg
 from qt.dlg_signmessage import SignMessage_dlg
 
@@ -66,6 +67,9 @@ class App(QMainWindow):
 
         # Clear DB
         self.db.clearTable('UTXOS')
+
+        # Clear raw txes updated earlier than two months ago
+        self.db.clearRawTxes(time() - SECONDS_IN_2_MONTHS)
 
         # Read cached app data
         self.cache = readCacheSettings()
