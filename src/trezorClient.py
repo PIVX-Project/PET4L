@@ -10,7 +10,7 @@ import threading
 from PyQt5.QtCore import Qt, QObject, pyqtSignal
 from PyQt5.QtWidgets import QMessageBox, QApplication
 
-from trezorlib import btc, exceptions, messages as trezor_proto, coins
+from trezorlib import btc, exceptions, messages as trezor_proto
 from trezorlib.client import TrezorClient, MINIMUM_FIRMWARE_VERSION
 from trezorlib.tools import parse_path
 from trezorlib.transport import enumerate_devices
