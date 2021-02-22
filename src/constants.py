@@ -23,6 +23,7 @@ TESTNET_STAKE_MAGIC_BYTE = 73
 DEFAULT_PROTOCOL_VERSION = 70915
 MINIMUM_FEE = 0.0001    # minimum PIV/kB
 SECONDS_IN_2_MONTHS = 60 * 24 * 60 * 60
+MAX_INPUTS_NO_WARNING = 75
 starting_width = 1033
 starting_height = 585
 home_dir = os.path.expanduser('~')

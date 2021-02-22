@@ -16,7 +16,7 @@ import simplejson as json
 from PyQt5.QtCore import QObject, pyqtSignal, QSettings
 from PyQt5.QtWidgets import QMessageBox
 
-from constants import log_File, DefaultCache, wqueue
+from constants import log_File, DefaultCache, wqueue, MAX_INPUTS_NO_WARNING
 
 
 def add_defaultKeys_to_dict(dictObj, defaultObj):
@@ -33,7 +33,7 @@ QT_MESSAGE_TYPE = {
 }
 
 
-def checkRPCstring(urlstring, action_msg="Malformed credentials"):
+def checkRPCstring(urlstring):
     try:
         o = urlparse(urlstring)
         if o.scheme is None or o.scheme == '':
@@ -52,6 +52,21 @@ def checkRPCstring(urlstring, action_msg="Malformed credentials"):
         error_msg = "Unable to parse URL"
         printException(getCallerName(), getFunctionName(), error_msg, e)
         return False
+
+def checkTxInputs(parentWindow, num_of_inputs):
+    if num_of_inputs == 0:
+        myPopUp_sb(parentWindow, "warn", 'Transaction NOT sent', "No UTXO to send")
+        return None
+
+    if num_of_inputs > MAX_INPUTS_NO_WARNING:
+        warning = "Warning: Trying to spend %d inputs.\nA few minutes could be required " \
+                  "for the transaction to be prepared and signed.\n\nThe hardware device must remain unlocked " \
+                  "during the whole time (it's advised to disable the auto-lock feature)\n\n" \
+                  "Do you wish to proceed?" % num_of_inputs
+        title = "PET4L - spending more than %d inputs" % MAX_INPUTS_NO_WARNING
+        return myPopUp(parentWindow, "warn", title, warning)
+
+    return QMessageBox.Yes
 
 
 def clean_for_html(text):

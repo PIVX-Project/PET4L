@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QMessageBox, QTableWidgetItem, QHeaderView
 
 from constants import MINIMUM_FEE
 from misc import printDbg, printError, printException, getCallerName, getFunctionName, \
-    persistCacheSetting, myPopUp, myPopUp_sb, DisconnectedException
+    persistCacheSetting, myPopUp, myPopUp_sb, DisconnectedException, checkTxInputs
 from pivx_parser import ParseTx, IsPayToColdStaking, GetDelegatedStaker
 from qt.gui_tabRewards import TabRewards_gui
 from threads import ThreadFuns
@@ -251,6 +251,7 @@ class TabRewards:
 
     def onSendRewards(self):
         self.dest_addr = self.ui.destinationLine.text().strip()
+        self.fee = self.ui.feeLine.value() * 1e8
 
         # Check HW device
         while self.caller.hwStatus != 2:
@@ -265,27 +266,14 @@ class TabRewards:
             printDbg("Unable to connect to hardware device. The device status is: %d" % self.caller.hwStatus)
             return None
 
-        # Check destination Address
-        if not checkPivxAddr(self.dest_addr, self.caller.isTestnetRPC):
-            myPopUp_sb(self.caller, "crit", 'PET4L - PIVX address check', "The destination address is missing, or invalid.")
-            return None
+        # SEND
+        self.SendRewards()
 
-        if len(self.selectedRewards) == 0:
-            myPopUp_sb(self.caller, "warn", 'Transaction NOT sent', "No UTXO to send")
-            return None
+    def SendRewards(self, inputs=None, gui=None):
+        # Default slots on tabRewards
+        if gui is None:
+            gui = self
 
-        # LET'S GO
-        printDbg("Sending from PIVX address  %s  to PIVX address  %s " % (self.curr_addr, self.dest_addr))
-        self.ui.rewardsList.statusLabel.hide()
-        printDbg("Preparing transaction. Please wait...")
-        self.ui.loadingLine.show()
-        self.ui.loadingLinePercent.show()
-        QApplication.processEvents()
-
-        # save last destination address and swiftxCheck to cache and persist to settings
-        self.caller.parent.cache["lastAddress"] = persistCacheSetting('cache_lastAddress', self.dest_addr)
-
-        self.currFee = self.ui.feeLine.value() * 1e8
         # re-connect signals
         try:
             self.caller.hwdevice.api.sigTxdone.disconnect()
@@ -299,13 +287,58 @@ class TabRewards:
             self.caller.hwdevice.api.tx_progress.disconnect()
         except:
             pass
-        self.caller.hwdevice.api.sigTxdone.connect(self.FinishSend)
-        self.caller.hwdevice.api.sigTxabort.connect(self.AbortSend)
-        self.caller.hwdevice.api.tx_progress.connect(self.updateProgressPercent)
+        self.caller.hwdevice.api.sigTxdone.connect(gui.FinishSend)
+        self.caller.hwdevice.api.sigTxabort.connect(gui.AbortSend)
+        self.caller.hwdevice.api.tx_progress.connect(gui.updateProgressPercent)
+
+        # Check destination Address
+        if not checkPivxAddr(self.dest_addr, self.caller.isTestnetRPC):
+            myPopUp_sb(self.caller, "crit", 'PET4L - PIVX address check', "The destination address is missing, or invalid.")
+            return None
+
+        if inputs is None:
+            # send from single path
+            num_of_inputs = len(self.selectedRewards)
+        else:
+            # bulk send
+            num_of_inputs = sum([len(x['utxos']) for x in inputs])
+        ans = checkTxInputs(self.caller, num_of_inputs)
+        if ans is None or ans == QMessageBox.No:
+            # emit sigTxAbort and return
+            self.caller.hwdevice.api.sigTxabort.emit()
+            return None
+
+        # LET'S GO
+        if inputs is None:
+            printDbg("Sending from PIVX address  %s  to PIVX address  %s " % (self.curr_addr, self.dest_addr))
+        else:
+            printDbg("Sweeping rewards to PIVX address %s " % self.dest_addr)
+        self.ui.rewardsList.statusLabel.hide()
+        printDbg("Preparing transaction. Please wait...")
+        self.ui.loadingLine.show()
+        self.ui.loadingLinePercent.show()
+        QApplication.processEvents()
+
+        # save last destination address and swiftxCheck to cache and persist to settings
+        self.caller.parent.cache["lastAddress"] = persistCacheSetting('cache_lastAddress', self.dest_addr)
 
         try:
             self.txFinished = False
-            self.caller.hwdevice.prepare_transfer_tx(self.caller, self.curr_path, self.selectedRewards, self.dest_addr, self.currFee, self.caller.isTestnetRPC)
+            if inputs is None:
+                # send from single path
+                self.caller.hwdevice.prepare_transfer_tx(self.caller,
+                                                         self.curr_path,
+                                                         self.selectedRewards,
+                                                         self.dest_addr,
+                                                         self.fee,
+                                                         self.caller.isTestnetRPC)
+            else:
+                # bulk send
+                self.caller.hwdevice.prepare_transfer_tx_bulk(self.caller,
+                                                              inputs,
+                                                              self.dest_addr,
+                                                              self.fee,
+                                                              self.caller.isTestnetRPC)
 
         except DisconnectedException:
             self.caller.hwStatus = 0
