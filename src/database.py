@@ -12,7 +12,7 @@ from constants import database_File, trusted_RPC_Servers
 from misc import printDbg, getCallerName, getFunctionName, printException
 
 
-class Database():
+class Database:
 
     '''
     class methods
@@ -26,9 +26,7 @@ class Database():
         self.conn = None
         printDbg("DB: Initialized")
 
-
-
-    def open(self):
+    def openDB(self):
         printDbg("DB: Opening...")
         if self.isOpen:
             raise Exception("Database already open")
@@ -48,8 +46,6 @@ class Database():
             except Exception as e:
                 err_msg = 'SQLite initialization error'
                 printException(getCallerName(), getFunctionName(), err_msg, e)
-
-
 
     def close(self):
         printDbg("DB: closing...")
@@ -71,8 +67,6 @@ class Database():
                 err_msg = 'SQLite closing error'
                 printException(getCallerName(), getFunctionName(), err_msg, e.args)
 
-
-
     def getCursor(self):
         if self.isOpen:
             self.lock.acquire()
@@ -88,8 +82,6 @@ class Database():
 
         else:
             raise Exception("Database closed")
-
-
 
     def releaseCursor(self, rollingBack=False, vacuum=False):
         if self.isOpen:
@@ -119,8 +111,6 @@ class Database():
         else:
             raise Exception("Database closed")
 
-
-
     def initTables(self):
         printDbg("DB: Initializing tables...")
         try:
@@ -145,12 +135,9 @@ class Database():
 
             printDbg("DB: Tables initialized")
 
-
         except Exception as e:
             err_msg = 'error initializing tables'
             printException(getCallerName(), getFunctionName(), err_msg, e.args)
-
-
 
     def initTable_RPC(self, cursor):
         s = trusted_RPC_Servers
@@ -168,12 +155,11 @@ class Database():
                        " (?, ?, ?, ?, ?);",
                        (0, "http", "127.0.0.1:51473", "rpcUser", "rpcPass"))
 
-
     '''
     General methods
     '''
 
-    def clearTable(self,  table_name):
+    def clearTable(self, table_name):
         printDbg("DB: Clearing table %s..." % table_name)
         cleared_RPC = False
         try:
@@ -194,8 +180,6 @@ class Database():
             if cleared_RPC:
                 self.app.sig_changed_rpcServers.emit()
 
-
-
     def removeTable(self, table_name):
         printDbg("DB: Dropping table %s..." % table_name)
         try:
@@ -209,8 +193,6 @@ class Database():
 
         finally:
             self.releaseCursor(vacuum=True)
-
-
 
     '''
     RPC servers methods
@@ -237,8 +219,6 @@ class Database():
             if added_RPC:
                 self.app.sig_changed_rpcServers.emit()
 
-
-
     def editRPCServer(self, protocol, host, user, passwd, id):
         printDbg("DB: Editing RPC server with id %d" % id)
         changed_RPC = False
@@ -259,8 +239,6 @@ class Database():
             self.releaseCursor()
             if changed_RPC:
                 self.app.sig_changed_rpcServers.emit()
-
-
 
     def getRPCServers(self, custom, id=None):
         tableName = "CUSTOM_RPC_SERVERS" if custom else "PUBLIC_RPC_SERVERS"
@@ -299,8 +277,6 @@ class Database():
 
         return server_list
 
-
-
     def removeRPCServer(self, id):
         printDbg("DB: Remove RPC server with id %d" % id)
         removed_RPC = False
@@ -318,9 +294,6 @@ class Database():
             self.releaseCursor(vacuum=True)
             if removed_RPC:
                 self.app.sig_changed_rpcServers.emit()
-
-
-
 
     '''
     UTXOS methods
@@ -346,8 +319,6 @@ class Database():
 
         return rewards
 
-
-
     def addReward(self, utxo):
         logging.debug("DB: Adding reward")
         try:
@@ -366,8 +337,6 @@ class Database():
         finally:
             self.releaseCursor()
 
-
-
     def deleteReward(self, tx_hash, tx_ouput_n):
         logging.debug("DB: Deleting reward")
         try:
@@ -379,8 +348,6 @@ class Database():
             printException(getCallerName(), getFunctionName(), err_msg, e.args)
         finally:
             self.releaseCursor(vacuum=True)
-
-
 
     def getReward(self, tx_hash, tx_ouput_n):
         logging.debug("DB: Getting reward")
@@ -399,8 +366,6 @@ class Database():
             self.releaseCursor()
 
         return self.rewards_from_rows(rows)[0]
-
-
 
     def getRewardsList(self, receiver=None):
         try:
@@ -422,4 +387,3 @@ class Database():
             self.releaseCursor()
 
         return self.rewards_from_rows(rows)
-

@@ -19,7 +19,7 @@ from apiClient import ApiClient
 from constants import starting_height, DefaultCache, wqueue
 from hwdevice import HWdevice
 from misc import printDbg, printException, printOK, getCallerName, getFunctionName, \
-    WriteStreamReceiver, now, persistCacheSetting,  myPopUp_sb, getRemotePET4Lversion
+    WriteStreamReceiver, now, persistCacheSetting, myPopUp_sb, getRemotePET4Lversion
 
 from tabRewards import TabRewards
 from qt.guiHeader import GuiHeader
@@ -29,7 +29,6 @@ from watchdogThreads import RpcWatchdog
 
 
 class MainWindow(QWidget):
-
     # signal: clear RPC status label and icons (emitted by updateRPCstatus)
     sig_clearRPCstatus = pyqtSignal()
 
@@ -52,7 +51,7 @@ class MainWindow(QWidget):
         self.runInThread = ThreadFuns.runInThread
         self.lock = threading.Lock()
 
-        ###-- Create clients and statuses
+        # -- Create clients and statuses
         self.hwStatus = 0
         self.hwModel = 0
         self.hwStatusMess = "Not Connected"
@@ -64,33 +63,33 @@ class MainWindow(QWidget):
         # Changes when an RPC client is connected (affecting API client)
         self.isTestnetRPC = self.parent.cache['isTestnetRPC']
 
-        ###-- Load icons & images
+        # -- Load icons & images
         self.loadIcons()
-        ###-- Create main layout
+        # -- Create main layout
         self.layout = QVBoxLayout()
         self.header = GuiHeader(self)
         self.initConsole()
         self.layout.addWidget(self.header)
 
-        ##-- Load RPC Servers list (init selection and self.isTestnet)
+        # -- Load RPC Servers list (init selection and self.isTestnet)
         self.updateRPClist()
 
-        ##-- Init HW selection
+        # -- Init HW selection
         self.header.hwDevices.setCurrentIndex(self.parent.cache['selectedHW_index'])
 
-        ##-- init HW Client
+        # -- init HW Client
         self.hwdevice = HWdevice(self)
 
-        ##-- init Api Client
+        # -- init Api Client
         self.apiClient = ApiClient(self.isTestnetRPC)
 
-        ###-- Create Queue to redirect stdout
+        # -- Create Queue to redirect stdout
         self.queue = wqueue
 
-        ###-- Init last logs
+        # -- Init last logs
         logging.debug("STARTING PET4L")
 
-        ###-- Create the thread to update console log for stdout
+        # -- Create the thread to update console log for stdout
         self.consoleLogThread = QThread()
         self.myWSReceiver = WriteStreamReceiver(self.queue)
         self.myWSReceiver.mysignal.connect(self.append_to_console)
@@ -99,47 +98,43 @@ class MainWindow(QWidget):
         self.consoleLogThread.start()
         printDbg("Console Log thread started")
 
-        ###-- Initialize tabs (single QLayout here)
+        # -- Initialize tabs (single QLayout here)
         self.tabs = QTabWidget()
         self.t_rewards = TabRewards(self)
-        ###-- Add tabs
+        # -- Add tabs
         self.tabs.addTab(self.tabRewards, self.parent.spmtIcon, "Spend")
-        ###-- Draw Tabs
+        # -- Draw Tabs
         self.splitter = QSplitter(Qt.Vertical)
-        ###-- Add tabs and console to Layout
+        # -- Add tabs and console to Layout
         self.splitter.addWidget(self.tabs)
         self.splitter.addWidget(self.console)
-        self.splitter.setStretchFactor(0,0)
-        self.splitter.setStretchFactor(1,1)
-        self.splitter.setSizes([2,1])
+        self.splitter.setStretchFactor(0, 0)
+        self.splitter.setStretchFactor(1, 1)
+        self.splitter.setSizes([2, 1])
         self.layout.addWidget(self.splitter)
 
-        ###-- Set Layout
+        # -- Set Layout
         self.setLayout(self.layout)
 
-        ###-- Init Settings
+        # -- Init Settings
         self.initSettings()
 
-        ###-- Connect buttons/signals
+        # -- Connect buttons/signals
         self.connButtons()
 
-        ###-- Create RPC Whatchdog
+        # -- Create RPC Whatchdog
         self.rpc_watchdogThread = QThread()
         self.myRpcWd = RpcWatchdog(self)
         self.myRpcWd.moveToThread(self.rpc_watchdogThread)
         self.rpc_watchdogThread.started.connect(self.myRpcWd.run)
 
-        ###-- Let's go
+        # -- Let's go
         self.mnode_to_change = None
         printOK("Hello! Welcome to " + parent.title)
-
-
 
     def append_to_console(self, text):
         self.consoleArea.moveCursor(QTextCursor.End)
         self.consoleArea.insertHtml(text)
-
-
 
     def clearHWstatus(self, message=''):
         self.hwStatus = 0
@@ -148,8 +143,6 @@ class MainWindow(QWidget):
         if message != '':
             self.hwStatus = 1
             myPopUp_sb(self, "crit", "hw device Disconnected", message)
-
-
 
     def clearRPCstatus(self):
         with self.lock:
@@ -162,23 +155,19 @@ class MainWindow(QWidget):
             self.header.responseTimeLabel.setStyleSheet("color: red")
             self.header.lastPingIcon.setStyleSheet("color: red")
 
-
-
     def connButtons(self):
         self.header.button_checkRpc.clicked.connect(lambda: self.onCheckRpc())
         self.header.button_checkHw.clicked.connect(lambda: self.onCheckHw())
         self.header.rpcClientsBox.currentIndexChanged.connect(self.onChangeSelectedRPC)
         self.header.hwDevices.currentIndexChanged.connect(self.onChangeSelectedHW)
-        ##-- Connect signals
+        # -- Connect signals
         self.sig_clearRPCstatus.connect(self.clearRPCstatus)
         self.sig_RPCstatusUpdated.connect(self.showRPCstatus)
         self.parent.sig_changed_rpcServers.connect(self.updateRPClist)
 
-
-
     def getRPCserver(self):
         itemData = self.header.rpcClientsBox.itemData(self.header.rpcClientsBox.currentIndex())
-        rpc_index  = self.header.rpcClientsBox.currentIndex()
+        rpc_index = self.header.rpcClientsBox.currentIndex()
         rpc_protocol = itemData["protocol"]
         rpc_host = itemData["host"]
         rpc_user = itemData["user"]
@@ -186,13 +175,8 @@ class MainWindow(QWidget):
 
         return rpc_index, rpc_protocol, rpc_host, rpc_user, rpc_password
 
-
-
     def getServerListIndex(self, server):
         return self.header.rpcClientsBox.findData(server)
-
-
-
 
     def initConsole(self):
         self.console = QGroupBox()
@@ -230,15 +214,11 @@ class MainWindow(QWidget):
         layout.addWidget(self.consoleArea)
         self.console.setLayout(layout)
 
-
-
     def initSettings(self):
         self.splitter.setSizes([self.parent.cache.get("splitter_x"), self.parent.cache.get("splitter_y")])
-        ###-- Hide console if it was previously hidden
+        # -- Hide console if it was previously hidden
         if self.parent.cache.get("console_hidden"):
             self.onToggleConsole()
-
-
 
     def loadIcons(self):
         # Load Icons
@@ -257,22 +237,18 @@ class MainWindow(QWidget):
         self.coldStaking_icon = QIcon(os.path.join(self.imgDir, 'icon_coldstaking.png'))
         self.copy_icon = QIcon(os.path.join(self.imgDir, 'icon_copy.png'))
 
-
     def onCheckHw(self):
         printDbg("Checking for HW device...")
         self.updateHWstatus(None)
         self.showHWstatus()
 
-
     def onCheckRpc(self):
-        self.runInThread(self.updateRPCstatus, (True,),)
-
+        self.runInThread(self.updateRPCstatus, (True,), )
 
     def onCheckVersion(self):
         printDbg("Checking PET4L version...")
         self.versionLabel.setText("--")
         self.runInThread(self.checkVersion, (), self.updateVersion)
-
 
     def checkVersion(self, ctrl):
         local_version = self.parent.version['number'].split('.')
@@ -280,49 +256,45 @@ class MainWindow(QWidget):
         remote_version = self.gitVersion.split('.')
 
         if (remote_version[0] > local_version[0]) or \
-        (remote_version[0] == local_version[0] and remote_version[1] > local_version[1]) or \
-        (remote_version[0] == local_version[0] and remote_version[1] == local_version[1] and remote_version[2] > local_version[2]):
+                (remote_version[0] == local_version[0] and remote_version[1] > local_version[1]) or \
+                (remote_version[0] == local_version[0] and remote_version[1] == local_version[1] and remote_version[2] >
+                 local_version[2]):
             self.versionMess = '<b style="color:red">New Version Available:</b> %s  ' % (self.gitVersion)
             self.versionMess += '(<a href="https://github.com/PIVX-Project/PET4L/releases/">download</a>)'
         else:
             self.versionMess = "You have the latest version of PET4L"
-
 
     def updateVersion(self):
         if self.versionMess is not None:
             self.versionLabel.setText(self.versionMess)
         printOK("Remote version: %s" % str(self.gitVersion))
 
-
     def onChangeSelectedHW(self, i):
         # Clear status
         self.clearHWstatus()
 
         # Persist setting
-        self.parent.cache['selectedHW_index'] = persistCacheSetting('cache_HWindex',i)
-
+        self.parent.cache['selectedHW_index'] = persistCacheSetting('cache_HWindex', i)
 
     def onChangeSelectedRPC(self, i):
         # Don't update when we are clearing the box
         if not self.updatingRPCbox:
             # persist setting
-            self.parent.cache['selectedRPC_index'] = persistCacheSetting('cache_RPCindex',i)
+            self.parent.cache['selectedRPC_index'] = persistCacheSetting('cache_RPCindex', i)
             self.runInThread(self.updateRPCstatus, (True,), )
-
 
     def onCleanConsole(self):
         self.consoleArea.clear()
-
 
     def onSaveConsole(self):
         timestamp = strftime('%Y-%m-%d_%H-%M-%S', gmtime(now()))
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self,"Save Logs to file", "PET4L_Logs_%s.txt" % timestamp,"All Files (*);; Text Files (*.txt)", options=options)
+        fileName, _ = QFileDialog.getSaveFileName(self, "Save Logs to file", "PET4L_Logs_%s.txt" % timestamp, "All Files (*);; Text Files (*.txt)", options=options)
         try:
             if fileName:
                 printOK("Saving logs to %s" % fileName)
-                log_file = open(fileName, 'w+')
+                log_file = open(fileName, 'w+', encoding="utf-8")
                 log_text = self.consoleArea.toPlainText()
                 log_file.write(log_text)
                 log_file.close()
@@ -330,7 +302,6 @@ class MainWindow(QWidget):
         except Exception as e:
             err_msg = "error writing Log file"
             printException(getCallerName(), getFunctionName(), err_msg, e.args)
-
 
     def onToggleConsole(self):
         if self.btn_consoleToggle.text() == 'Hide':
@@ -344,11 +315,9 @@ class MainWindow(QWidget):
             self.btn_consoleToggle.setText('Hide')
             self.consoleArea.show()
 
-
     def showHWstatus(self):
         self.updateHWleds()
         myPopUp_sb(self, "info", 'PET4L - hw check', "%s" % self.hwStatusMess)
-
 
     def showRPCstatus(self, server_index, fDebug):
         # Update displayed status only if selected server is not changed
@@ -356,7 +325,6 @@ class MainWindow(QWidget):
             self.updateRPCled(fDebug)
             if fDebug:
                 myPopUp_sb(self, "info", 'PET4L - rpc check', "%s" % self.rpcStatusMess)
-
 
     def updateHWleds(self):
         if self.hwStatus == 1:
@@ -366,7 +334,6 @@ class MainWindow(QWidget):
         else:
             self.header.hwLed.setPixmap(self.ledGrayH_icon)
         self.header.hwLed.setToolTip(self.hwStatusMess)
-
 
     def updateHWstatus(self, ctrl):
         # re-initialize device
@@ -379,7 +346,6 @@ class MainWindow(QWidget):
 
         printDbg("status:%s - mess: %s" % (self.hwStatus, self.hwStatusMess))
 
-
     def updateLastBlockLabel(self):
         text = '--'
         if self.rpcLastBlock == 1:
@@ -390,7 +356,6 @@ class MainWindow(QWidget):
                 text += " (Synchronizing)"
 
         self.header.lastBlockLabel.setText(text)
-
 
     def updateLastBlockPing(self):
         if not self.rpcConnected:
@@ -411,7 +376,6 @@ class MainWindow(QWidget):
                 self.header.responseTimeLabel.setStyleSheet("color: %s" % color)
                 self.header.lastPingIcon.setStyleSheet("color: %s" % color)
 
-
     def updateRPCled(self, fDebug=False):
         if self.rpcConnected:
             self.header.rpcLed.setPixmap(self.ledPurpleH_icon)
@@ -430,7 +394,6 @@ class MainWindow(QWidget):
         self.header.rpcLed.setToolTip(self.rpcStatusMess)
         self.updateLastBlockLabel()
         self.updateLastBlockPing()
-
 
     def updateRPClist(self):
         # Clear old stuff
@@ -464,7 +427,6 @@ class MainWindow(QWidget):
         # reload servers in configure dialog
         self.sig_RPClistReloaded.emit()
 
-
     def updateRPCstatus(self, ctrl, fDebug=False):
         rpc_index, rpc_protocol, rpc_host, rpc_user, rpc_password = self.getRPCserver()
         if fDebug:
@@ -483,7 +445,7 @@ class MainWindow(QWidget):
 
         rpcResponseTime = None
         if r_time1 is not None and r_time2 != 0:
-            rpcResponseTime = round((r_time1+r_time2)/2, 3)
+            rpcResponseTime = round((r_time1 + r_time2) / 2, 3)
 
         # Do not update status if the user has selected a different server since the start of updateRPCStatus()
         if rpc_index != self.header.rpcClientsBox.currentIndex():
@@ -502,4 +464,3 @@ class MainWindow(QWidget):
                 self.parent.cache['isTestnetRPC'] = persistCacheSetting('isTestnetRPC', isTestnet)
                 self.apiClient = ApiClient(isTestnet)
         self.sig_RPCstatusUpdated.emit(rpc_index, fDebug)
-

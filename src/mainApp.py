@@ -19,6 +19,7 @@ from constants import user_dir
 from qt.dlg_configureRPCservers import ConfigureRPCservers_dlg
 from qt.dlg_signmessage import SignMessage_dlg
 
+
 class ServiceExit(Exception):
     """
     Custom exception which is used to trigger the clean exit
@@ -30,7 +31,6 @@ class ServiceExit(Exception):
 def service_shutdown(signum, frame):
     print('Caught signal %d' % signum)
     raise ServiceExit
-
 
 
 class App(QMainWindow):
@@ -57,7 +57,7 @@ class App(QMainWindow):
 
         # Open database
         self.db = Database(self)
-        self.db.open()
+        self.db.openDB()
 
         # Check for startup args (clear data)
         if start_args.clearAppData:
@@ -72,7 +72,6 @@ class App(QMainWindow):
 
         # Initialize user interface
         self.initUI(imgDir)
-
 
     def initUI(self, imgDir):
         # Set title and geometry
@@ -99,8 +98,6 @@ class App(QMainWindow):
         # Show
         self.show()
         self.activateWindow()
-
-
 
     def closeEvent(self, *args, **kwargs):
         # Terminate the running threads.
@@ -130,15 +127,11 @@ class App(QMainWindow):
         print("Bye Bye.")
         return QMainWindow.closeEvent(self, *args, **kwargs)
 
-
-
     def onEditRPCServer(self):
         # Create Dialog
         ui = ConfigureRPCservers_dlg(self)
         if ui.exec():
             printDbg("Configuring RPC Servers...")
-
-
 
     def onSignVerifyMessage(self):
         # Create Dialog
