@@ -1,4 +1,5 @@
 ; Helper defines. PRODUCT_VERSION is parsed by reading src/version.txt.
+Unicode True
 !searchparse /file src/version.txt `"number": "` VER_MAJOR `.` VER_MINOR `.` VER_REV `"`
 !searchparse /file src/version.txt `"tag": "` VER_TAG `"`
 !define PRODUCT_NAME "PET4L"
