@@ -68,6 +68,15 @@ class GuiHeader(QWidget):
         self.hwLed.setToolTip("status: %s" % caller.hwStatusMess)
         self.hwLed.setPixmap(caller.ledGrayH_icon)
         self.centralBox.addWidget(self.hwLed, 1, 3)
+        # -- 1c) Select & Check Explorer
+        label4 = QLabel("Explorer")
+        self.centralBox.addWidget(label4, 2, 0)
+        self.explorerClientsBox = QComboBox()
+        self.explorerClientsBox.setToolTip("Select Explorer Server")
+        #self.explorerClientsBox.setItemDelegate(AlignDelegate())
+        self.centralBox.addWidget(self.explorerClientsBox, 2, 1)
+
         layout.addLayout(self.centralBox)
         layout.addStretch(1)
+
         self.setLayout(layout)

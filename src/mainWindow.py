@@ -13,7 +13,7 @@ import threading
 from PyQt5.QtCore import pyqtSignal, Qt, QThread
 from PyQt5.QtGui import QPixmap, QColor, QPalette, QTextCursor, QFont, QIcon
 from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QGroupBox, QVBoxLayout, \
-    QFileDialog, QTextEdit, QTabWidget, QLabel, QSplitter
+    QFileDialog, QTextEdit, QTabWidget, QLabel, QSplitter, QAction, QMenuBar
 
 from apiClient import ApiClient
 from constants import starting_height, DefaultCache, wqueue
@@ -38,6 +38,9 @@ class MainWindow(QWidget):
     # signal: RPC list has been reloaded (emitted by updateRPClist)
     sig_RPClistReloaded = pyqtSignal()
 
+    # signal: Explorer list has been reloaded (emitted by updateExplorerList)
+    sig_ExplorerListReloaded = pyqtSignal()
+
     # signal: UTXO list loading percent (emitted by load_utxos_thread in tabRewards)
     sig_UTXOsLoading = pyqtSignal(int)
 
@@ -48,6 +51,10 @@ class MainWindow(QWidget):
         self.imgDir = imgDir
         self.runInThread = ThreadFuns.runInThread
         self.lock = threading.Lock()
+
+        # Set default value for selectedExplorer_index if it does not exist
+        if 'selectedExplorer_index' not in self.parent.cache:
+            self.parent.cache['selectedExplorer_index'] = 0
 
         # -- Create clients and statuses
         self.hwStatus = 0
@@ -60,6 +67,12 @@ class MainWindow(QWidget):
         self.isBlockchainSynced = False
         # Changes when an RPC client is connected (affecting API client)
         self.isTestnetRPC = self.parent.cache['isTestnetRPC']
+
+        # -- Default explorer servers list
+        self.explorerServersList = [
+            {"id": 1, "url": "https://explorer.duddino.com/", "isCustom": False},
+            {"id": 2, "url": "https://testnet.duddino.com/", "isCustom": False}
+        ]
 
         # -- Load icons & images
         self.loadIcons()
@@ -79,7 +92,7 @@ class MainWindow(QWidget):
         self.hwdevice = HWdevice(self)
 
         # -- init Api Client
-        self.apiClient = ApiClient(self.isTestnetRPC)
+        self.apiClient = ApiClient(self)  # Pass 'self' as main_wnd reference
 
         # -- Create Queue to redirect stdout
         self.queue = wqueue
@@ -130,6 +143,9 @@ class MainWindow(QWidget):
         self.mnode_to_change = None
         printOK("Hello! Welcome to " + parent.title)
 
+        # Load Explorer Servers list
+        self.updateExplorerList()
+
     def append_to_console(self, text):
         self.consoleArea.moveCursor(QTextCursor.End)
         self.consoleArea.insertHtml(text)
@@ -175,6 +191,9 @@ class MainWindow(QWidget):
 
     def getServerListIndex(self, server):
         return self.header.rpcClientsBox.findData(server)
+    
+    def getExplorerListIndex(self, server):
+        return self.header.explorerClientsBox.findData(server)
 
     def initConsole(self):
         self.console = QGroupBox()
@@ -424,6 +443,50 @@ class MainWindow(QWidget):
         self.updatingRPCbox = False
         # reload servers in configure dialog
         self.sig_RPClistReloaded.emit()
+
+    def updateExplorerList(self):
+        # Clear old stuff
+        self.header.explorerClientsBox.clear()
+        public_servers = self.parent.db.getExplorerServers(custom=False)
+        custom_servers = self.parent.db.getExplorerServers(custom=True)
+        self.explorerServersList = public_servers + custom_servers
+        # Add public servers (italics)
+        italicsFont = QFont("Times", italic=True)
+        for s in public_servers:
+            url = s["url"]
+            self.header.explorerClientsBox.addItem(url, s)
+            self.header.explorerClientsBox.setItemData(self.getExplorerListIndex(s), italicsFont, Qt.FontRole)
+        # Add custom servers
+        for s in custom_servers:
+            url = s["url"]
+            self.header.explorerClientsBox.addItem(url, s)
+        # reset index
+        if self.parent.cache['selectedExplorer_index'] >= self.header.explorerClientsBox.count():
+            # (if manually removed from the config files) replace default index
+            self.parent.cache['selectedExplorer_index'] = persistCacheSetting('cache_Explorerindex', DefaultCache["selectedExplorer_index"])
+
+        self.header.explorerClientsBox.setCurrentIndex(self.parent.cache['selectedExplorer_index'])
+        # reload servers in configure dialog
+        self.sig_ExplorerListReloaded.emit()
+
+    def getExplorerURL(self, network):
+        for server in self.explorerServersList:
+            if (network == 'mainnet' and 'mainnet' in server['url']) or (network == 'testnet' and 'testnet' in server['url']):
+                return server['url']
+        # Fallback if no matching server found
+        return self.explorerServersList[0]['url']
+
+    def saveExplorerServers(self):
+        self.parent.cache['explorerServersList'] = self.explorerServersList
+        saveCacheSettings(self.parent.cache)
+        self.updateExplorerList()
+
+    def loadExplorerServers(self):
+        if 'explorerServersList' in self.parent.cache:
+            self.explorerServersList = self.parent.cache['explorerServersList']
+        else:
+            self.explorerServersList = []
+        self.updateExplorerList()
 
     def updateRPCstatus(self, ctrl, fDebug=False):
         rpc_index, rpc_protocol, rpc_host, rpc_user, rpc_password = self.getRPCserver()

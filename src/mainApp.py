@@ -19,7 +19,7 @@ from mainWindow import MainWindow
 from constants import user_dir, SECONDS_IN_2_MONTHS
 from qt.dlg_configureRPCservers import ConfigureRPCservers_dlg
 from qt.dlg_signmessage import SignMessage_dlg
-
+from qt.dlg_configureExplorer import ConfigureExplorerServers_dlg
 
 class ServiceExit(Exception):
     """
@@ -99,6 +99,9 @@ class App(QMainWindow):
         self.rpcConfMenu = QAction(self.pivx_icon, 'RPC Servers config...', self)
         self.rpcConfMenu.triggered.connect(self.onEditRPCServer)
         confMenu.addAction(self.rpcConfMenu)
+        self.explorerConfMenu = QAction(self.pivx_icon, 'Explorer Servers config...', self)
+        self.explorerConfMenu.triggered.connect(self.onEditExplorerServer)
+        confMenu.addAction(self.explorerConfMenu)
         toolsMenu = mainMenu.addMenu('Tools')
         self.signVerifyAction = QAction('Sign/Verify message', self)
         self.signVerifyAction.triggered.connect(self.onSignVerifyMessage)
@@ -140,6 +143,12 @@ class App(QMainWindow):
         ui = ConfigureRPCservers_dlg(self)
         if ui.exec():
             printDbg("Configuring RPC Servers...")
+
+    def onEditExplorerServer(self):
+        # Create Dialog
+        ui = ConfigureExplorerServers_dlg(self)
+        if ui.exec():
+            printDbg("Configuring Explorer Servers...")
 
     def onSignVerifyMessage(self):
         # Create Dialog
