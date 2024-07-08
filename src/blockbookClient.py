@@ -32,13 +32,16 @@ def process_blockbook_exceptions(func):
 
 
 class BlockBookClient:
-
-    def __init__(self, isTestnet=False):
+    def __init__(self, main_wnd, isTestnet=False):
+        self.main_wnd = main_wnd
         self.isTestnet = isTestnet
-        if isTestnet:
-            self.url = "https://testnet.rockdev.org/"
+        self.loadURL()
+
+    def loadURL(self):
+        if self.isTestnet:
+            self.url = self.main_wnd.getExplorerURL('testnet')
         else:
-            self.url = "https://explorer.rockdev.org/"
+            self.url = self.main_wnd.getExplorerURL('mainnet')
 
     def checkResponse(self, method, param=""):
         url = self.url + "/api/%s" % method
@@ -53,7 +56,6 @@ class BlockBookClient:
     @process_blockbook_exceptions
     def getAddressUtxos(self, address):
         utxos = self.checkResponse("utxo", address)
-        # Add script for cryptoID legacy
         for u in utxos:
             u["script"] = ""
         return utxos
