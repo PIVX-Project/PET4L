@@ -5,7 +5,7 @@
 # file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
 
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, \
-    QListWidget, QFrame, QFormLayout, QComboBox, QLineEdit, QListWidgetItem, \
+    QListWidget, QFrame, QFormLayout, QLineEdit, QListWidgetItem, \
     QWidget, QPushButton, QMessageBox
 
 from misc import myPopUp
