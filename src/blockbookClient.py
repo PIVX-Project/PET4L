@@ -15,11 +15,8 @@ def process_blockbook_exceptions(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            if client.isTestnet:
-                new_url = "https://testnet.fuzzbawls.pw"
-            else:
-                new_url = "https://zkbitcoin.com/"
-            message = "BlockBook Client exception on %s\nTrying backup server %s" % (client.url, new_url)
+            new_url = "https://testnet.fuzzbawls.pw" if client.isTestnet else "https://zkbitcoin.com/"
+            message = f"BlockBook Client exception on {client.url}\nTrying backup server {new_url}"
             printException(getCallerName(True), getFunctionName(True), message, str(e))
             try:
                 client.url = new_url
@@ -33,21 +30,18 @@ def process_blockbook_exceptions(func):
 
 class BlockBookClient:
 
-    def __init__(self, isTestnet=False):
+    def __init__(self, main_wnd, isTestnet=False):
+        self.main_wnd = main_wnd
         self.isTestnet = isTestnet
-        if isTestnet:
-            self.url = "https://testnet.rockdev.org/"
-        else:
-            self.url = "https://explorer.rockdev.org/"
+        self.url = "https://testnet.rockdev.org/" if isTestnet else "https://explorer.rockdev.org/"
 
     def checkResponse(self, method, param=""):
-        url = self.url + "/api/%s" % method
-        if param != "":
-            url += "/%s" % param
+        url = f"{self.url}/api/{method}"
+        if param:
+            url += f"/{param}"
         resp = requests.get(url, data={}, verify=True)
         if resp.status_code == 200:
-            data = resp.json()
-            return data
+            return resp.json()
         raise Exception("Invalid response")
 
     @process_blockbook_exceptions
