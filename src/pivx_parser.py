@@ -10,11 +10,11 @@ from pivx_hashlib import pubkeyhash_to_address
 
 
 class HexParser:
-    def __init__(self, hex_str):
+    def __init__(self, hex_str: str):
         self.cursor = 0
         self.hex_str = hex_str
 
-    def readInt(self, nbytes, byteorder="big", signed=False):
+    def readInt(self, nbytes: int, byteorder: str = "big", signed: bool = False) -> int:
         if self.cursor + nbytes * 2 > len(self.hex_str):
             raise Exception("HexParser range error")
         b = bytes.fromhex(self.hex_str[self.cursor:self.cursor + nbytes * 2])
@@ -22,7 +22,7 @@ class HexParser:
         self.cursor += nbytes * 2
         return res
 
-    def readVarInt(self):
+    def readVarInt(self) -> int:
         r = self.readInt(1)
         if r == 253:
             return self.readInt(2, "little")
@@ -32,7 +32,7 @@ class HexParser:
             return self.readInt(8, "little")
         return r
 
-    def readString(self, nbytes, byteorder="big"):
+    def readString(self, nbytes: int, byteorder: str = "big") -> str:
         if self.cursor + nbytes * 2 > len(self.hex_str):
             raise Exception("HexParser range error")
         res = self.hex_str[self.cursor:self.cursor + nbytes * 2]
@@ -43,18 +43,19 @@ class HexParser:
         return res
 
 
-def IsCoinBase(vin):
+def IsCoinBase(vin: dict) -> bool:
     return vin["txid"] == "0" * 64 and vin["vout"] == 4294967295 and vin["scriptSig"]["hex"][:2] != "c2"
 
 
-def ParseTxInput(p):
-    vin = {}
-    vin["txid"] = p.readString(32, "little")
-    vin["vout"] = p.readInt(4, "little")
-    script_len = p.readVarInt()
-    vin["scriptSig"] = {}
-    vin["scriptSig"]["hex"] = p.readString(script_len, "big")
-    vin["sequence"] = p.readInt(4, "little")
+def ParseTxInput(p: HexParser) -> dict:
+    vin = {
+        "txid": p.readString(32, "little"),
+        "vout": p.readInt(4, "little"),
+        "scriptSig": {
+            "hex": p.readString(p.readVarInt(), "big")
+        },
+        "sequence": p.readInt(4, "little")
+    }
     if IsCoinBase(vin):
         del vin["txid"]
         del vin["vout"]
@@ -64,13 +65,14 @@ def ParseTxInput(p):
     return vin
 
 
-def ParseTxOutput(p, isTestnet=False):
-    vout = {}
-    vout["value"] = p.readInt(8, "little")
-    script_len = p.readVarInt()
-    vout["scriptPubKey"] = {}
-    vout["scriptPubKey"]["hex"] = p.readString(script_len, "big")
-    vout["scriptPubKey"]["addresses"] = []
+def ParseTxOutput(p: HexParser, isTestnet: bool = False) -> dict:
+    vout = {
+        "value": p.readInt(8, "little"),
+        "scriptPubKey": {
+            "hex": p.readString(p.readVarInt(), "big"),
+            "addresses": []
+        }
+    }
     try:
         locking_script = bytes.fromhex(vout["scriptPubKey"]["hex"])
         # add addresses only if P2PKH, P2PK or P2CS
@@ -83,37 +85,28 @@ def ParseTxOutput(p, isTestnet=False):
     return vout
 
 
-def ParseTx(hex_string, isTestnet=False):
+def ParseTx(hex_string: str, isTestnet: bool = False) -> dict:
     p = HexParser(hex_string)
-    tx = {}
-
-    tx["version"] = p.readInt(4, "little")
-
-    num_of_inputs = p.readVarInt()
-    tx["vin"] = []
-    for i in range(num_of_inputs):
-        tx["vin"].append(ParseTxInput(p))
-
-    num_of_outputs = p.readVarInt()
-    tx["vout"] = []
-    for i in range(num_of_outputs):
-        tx["vout"].append(ParseTxOutput(p, isTestnet))
-
-    tx["locktime"] = p.readInt(4, "little")
+    tx = {
+        "version": p.readInt(4, "little"),
+        "vin": [ParseTxInput(p) for _ in range(p.readVarInt())],
+        "vout": [ParseTxOutput(p, isTestnet) for _ in range(p.readVarInt())],
+        "locktime": p.readInt(4, "little")
+    }
     return tx
 
 
-def IsPayToColdStaking(rawtx, out_n):
+def IsPayToColdStaking(rawtx: str, out_n: int) -> tuple[bool, bool]:
     tx = ParseTx(rawtx)
     script = tx['vout'][out_n]["scriptPubKey"]["hex"]
     return utils.IsPayToColdStaking(bytes.fromhex(script)), IsCoinStake(tx)
 
 
-def IsCoinStake(json_tx):
+def IsCoinStake(json_tx: dict) -> bool:
     return json_tx['vout'][0]["scriptPubKey"]["hex"] == ""
 
 
-def GetDelegatedStaker(rawtx, out_n, isTestnet):
+def GetDelegatedStaker(rawtx: str, out_n: int, isTestnet: bool) -> str:
     tx = ParseTx(rawtx)
     script = tx['vout'][out_n]["scriptPubKey"]["hex"]
     if not utils.IsPayToColdStaking(bytes.fromhex(script)):

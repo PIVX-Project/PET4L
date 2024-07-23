@@ -35,13 +35,13 @@ def b64encode(text):
 
 def checkPivxAddr(address, isTestnet=False):
     try:
-        # check leading char 'D' or (for testnet) 'x' or 'y'
+        # Check leading char 'D' or (for testnet) 'x' or 'y'
         if isTestnet and address[0] not in P2PKH_PREFIXES_TNET + P2SH_PREFIXES_TNET:
             return False
         if not isTestnet and address[0] not in P2PKH_PREFIXES + P2SH_PREFIXES:
             return False
 
-        # decode and verify checksum
+        # Decode and verify checksum
         addr_bin = bytes.fromhex(b58decode(address).hex())
         addr_bin_check = bin_dbl_sha256(addr_bin[0:-4])[0:4]
         if addr_bin[-4:] != addr_bin_check:
@@ -58,13 +58,13 @@ def compose_tx_locking_script(dest_address, isTestnet=False):
     :param dest_address: destination address in Base58Check format
     :return: sequence of opcodes and its arguments, defining logic of the locking script
     """
-    pubkey_hash = bytearray.fromhex(b58check_to_hex(dest_address))  # convert address to a public key hash
+    pubkey_hash = bytearray.fromhex(b58check_to_hex(dest_address))  # Convert address to a public key hash
     if len(pubkey_hash) != 20:
         raise Exception('Invalid length of the public key hash: ' + str(len(pubkey_hash)))
 
     if (((not isTestnet) and (dest_address[0] in P2PKH_PREFIXES))
             or (isTestnet and (dest_address[0] in P2PKH_PREFIXES_TNET))):
-        # sequence of opcodes/arguments for p2pkh (pay-to-public-key-hash)
+        # Sequence of opcodes/arguments for p2pkh (pay-to-public-key-hash)
         scr = OP_DUP + \
               OP_HASH160 + \
               int.to_bytes(len(pubkey_hash), 1, byteorder='little') + \
@@ -73,7 +73,7 @@ def compose_tx_locking_script(dest_address, isTestnet=False):
               OP_CHECKSIG
     elif (((not isTestnet) and (dest_address[0] in P2SH_PREFIXES))
           or (isTestnet and (dest_address[0] in P2SH_PREFIXES_TNET))):
-        # sequence of opcodes/arguments for p2sh (pay-to-script-hash)
+        # Sequence of opcodes/arguments for p2sh (pay-to-script-hash)
         scr = OP_HASH160 + \
               int.to_bytes(len(pubkey_hash), 1, byteorder='little') + \
               pubkey_hash + \
@@ -182,7 +182,7 @@ def ipmap(ip, port):
                 ipv6map += a
 
         else:
-            raise Exception("invalid version number (%d)" % ipAddr.version)
+            raise Exception("Invalid version number (%d)" % ipAddr.version)
 
         ipv6map += int(port).to_bytes(2, byteorder='big').hex()
         if len(ipv6map) != 36:
@@ -210,16 +210,16 @@ def num_to_varint(a):
 
 
 def read_varint(buffer, offset):
-    if (buffer[offset] < 0xfd):
+    if buffer[offset] < 0xfd:
         value_size = 1
         value = buffer[offset]
-    elif (buffer[offset] == 0xfd):
+    elif buffer[offset] == 0xfd:
         value_size = 3
         value = int.from_bytes(buffer[offset + 1: offset + 3], byteorder='little')
-    elif (buffer[offset] == 0xfe):
+    elif buffer[offset] == 0xfe:
         value_size = 5
         value = int.from_bytes(buffer[offset + 1: offset + 5], byteorder='little')
-    elif (buffer[offset] == 0xff):
+    elif buffer[offset] == 0xff:
         value_size = 9
         value = int.from_bytes(buffer[offset + 1: offset + 9], byteorder='little')
     else:
@@ -236,7 +236,6 @@ def serialize_input_str(tx, prevout_n, sequence, script_sig):
     s.append(', ')
     if tx == '00' * 32 and prevout_n == 0xffffffff:
         s.append('coinbase %s' % script_sig)
-
     else:
         script_sig2 = script_sig
         if len(script_sig2) > 24:
