@@ -32,18 +32,18 @@ from threads import ThreadFuns
 from utils import checkPivxAddr, ecdsa_verify_addr
 
 
-class SignMessage_dlg(QDialog):
+class SignMessageDlg(QDialog):
     def __init__(self, main_wnd):
-        QDialog.__init__(self, parent=main_wnd)
+        super().__init__(parent=main_wnd)
         self.setWindowTitle('Sign/Verify Message')
         self.initUI(main_wnd)
 
     def initUI(self, main_wnd):
-        self.ui = Ui_SignMessageDlg()
+        self.ui = UiSignMessageDlg()
         self.ui.setupUi(self, main_wnd)
 
 
-class Ui_SignMessageDlg(object):
+class UiSignMessageDlg:
     def setupUi(self, SignMessageDlg, main_wnd):
         SignMessageDlg.setModal(True)
         SignMessageDlg.setMinimumWidth(600)
@@ -61,7 +61,7 @@ class Ui_SignMessageDlg(object):
 class TabSign:
     def __init__(self, main_wnd):
         self.main_wnd = main_wnd
-        self.ui = TabSign_gui()
+        self.ui = TabSignGui()
         self.loadAddressComboBox()
         # connect signals/buttons
         self.ui.addressComboBox.currentIndexChanged.connect(lambda: self.onChangeSelectedAddress())
@@ -102,9 +102,9 @@ class TabSign:
 
         pk = device.scanForPubKey(self.hwAcc, self.spath, self.currIsTestnet)
         if pk is None:
-            mess = "Unable to find public key. The action was refused on the device or another application "
-            mess += "might have taken over the USB communication with the device.<br><br>"
-            mess += "The operation was canceled."
+            mess = ("Unable to find public key. The action was refused on the device or another application "
+                    "might have taken over the USB communication with the device.<br><br>"
+                    "The operation was canceled.")
             myPopUp_sb(self.main_wnd, QMessageBox.Critical, 'PET4L - PK not found', mess)
             return
         self.updateGenericAddress(pk)
@@ -124,10 +124,9 @@ class TabSign:
             addy = self.ui.addressLineEdit.text().strip()
             starting_spath = self.curr_starting_spath
             spath_count = self.curr_spath_count
-            mess = "Scanned addresses <b>%d</b> to <b>%d</b> of HW account <b>%d</b>.<br>" % (
-                starting_spath, starting_spath + spath_count - 1, self.hwAcc)
-            mess += "Unable to find the address <i>%s</i>.<br>Maybe it's on a different account.<br><br>" % addy
-            mess += "Do you want to scan %d more addresses of account n.<b>%d</b> ?" % (spath_count, self.hwAcc)
+            mess = (f"Scanned addresses <b>{starting_spath}</b> to <b>{starting_spath + spath_count - 1}</b> of HW account <b>{self.hwAcc}</b>.<br>"
+                    f"Unable to find the address <i>{addy}</i>.<br>Maybe it's on a different account.<br><br>"
+                    f"Do you want to scan {spath_count} more addresses of account n.<b>{self.hwAcc}</b> ?")
             ans = myPopUp(self.main_wnd, QMessageBox.Question, 'PET4L - spath search', mess)
             if ans == QMessageBox.Yes:
                 # Look for 10 more addresses
@@ -165,9 +164,8 @@ class TabSign:
                                                   "All Files (*);; Text Files (*.txt)", options=options)
         try:
             if fileName:
-                save_file = open(fileName, 'w', encoding="utf-8")
-                save_file.write(self.ui.signatureTextEdt.toPlainText())
-                save_file.close()
+                with open(fileName, 'w', encoding="utf-8") as save_file:
+                    save_file.write(self.ui.signatureTextEdt.toPlainText())
                 myPopUp_sb(self.main_wnd, QMessageBox.Information, 'PET4L - saved', "Signature saved to file")
                 return
         except Exception as e:
@@ -188,7 +186,7 @@ class TabSign:
 
             if not checkPivxAddr(addy, self.currIsTestnet):
                 net = "testnet" if self.currIsTestnet else "mainnet"
-                mess = "PIVX address not valid. Insert valid PIVX %s address" % net
+                mess = f"PIVX address not valid. Insert valid PIVX {net} address"
                 myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - invalid address', mess)
                 return
 
@@ -251,9 +249,9 @@ class TabSign:
         self.ui.hiddenLine.setVisible(not enabled)
         tooltip = ""
         if not enabled:
-            tooltip = "You need to find the address PK in your hardware device first.\n" \
-                      "Insert the account number (usually 0) and either a PIVX address\n" \
-                      "or the spath_id (address number) and click 'Search HW'."
+            tooltip = ("You need to find the address PK in your hardware device first.\n"
+                       "Insert the account number (usually 0) and either a PIVX address\n"
+                       "or the spath_id (address number) and click 'Search HW'.")
             self.ui.addressLabel.setText("")
         self.ui.signBtn.setToolTip(tooltip)
 
@@ -263,14 +261,14 @@ class TabSign:
             # double check address
             addy = self.ui.addressLineEdit.text().strip()
             if addy != genericAddy:
-                mess = "Error! retrieved address (%s) different from input (%s)" % (genericAddy, addy)
+                mess = f"Error! retrieved address ({genericAddy}) different from input ({addy})"
                 myPopUp_sb(self.main_wnd, QMessageBox.Critical, 'PET4L - address mismatch', mess)
                 self.ui.addressLabel.setText("")
                 return
         # update generic address
         self.setSignEnabled(True)
         self.currAddress = genericAddy
-        self.currHwPath = "%d'/0/%d" % (self.hwAcc, self.spath)
+        self.currHwPath = f"{self.hwAcc}'/0/{self.spath}"
         self.ui.addressLabel.setText(self.currAddress)
         self.ui.editBtn.setVisible(True)
 
@@ -278,7 +276,7 @@ class TabSign:
 class TabVerify:
     def __init__(self, main_wnd):
         self.main_wnd = main_wnd
-        self.ui = TabVerify_gui()
+        self.ui = TabVerifyGui()
         # connect signals/buttons
         self.ui.verifyBtn.clicked.connect(lambda: self.onVerify())
 
@@ -307,21 +305,21 @@ class TabVerify:
                                    self.ui.signatureTextEdt.toPlainText(),
                                    self.ui.addressLineEdit.text().strip())
         except Exception as e:
-            mess = "Error decoding signature:\n" + str(e)
+            mess = f"Error decoding signature:\n{e}"
             myPopUp_sb(self.main_wnd, QMessageBox.Warning, 'PET4L - invalid signature', mess)
             ok = False
         if ok:
             mess = "<span style='color: green'>Signature OK"
         else:
             mess = "<span style='color: red'>Signature doesn't verify"
-        mess = "<b>" + mess + "</span></b>"
+        mess = f"<b>{mess}</span></b>"
         self.ui.resultLabel.setText(mess)
         self.ui.resultLabel.setVisible(True)
 
 
-class TabSign_gui(QWidget):
+class TabSignGui(QWidget):
     def __init__(self):
-        QWidget.__init__(self)
+        super().__init__()
         layout = QVBoxLayout()
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(13)
@@ -426,7 +424,7 @@ class TabSign_gui(QWidget):
         self.copyBtn.setVisible(False)
         row5.addWidget(self.copyBtn)
         self.saveBtn = QPushButton("Save")
-        self.saveBtn.setToolTip("Save signature to ca file")
+        self.saveBtn.setToolTip("Save signature to a file")
         self.saveBtn.setVisible(False)
         row5.addWidget(self.saveBtn)
         layout.addLayout(row5)
@@ -434,9 +432,9 @@ class TabSign_gui(QWidget):
         self.setLayout(layout)
 
 
-class TabVerify_gui(QWidget):
+class TabVerifyGui(QWidget):
     def __init__(self):
-        QWidget.__init__(self)
+        super().__init__()
         layout = QVBoxLayout()
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(13)
