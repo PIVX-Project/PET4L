@@ -8,16 +8,18 @@ import sys
 import os.path
 
 from PyQt5.QtCore import Qt
-from PyQt5.Qt import QLabel, QFormLayout, QDoubleSpinBox, QTableWidget, QTableWidgetItem, QAbstractItemView, QHeaderView, QSpinBox
-from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QGroupBox, QVBoxLayout
-from PyQt5.QtWidgets import QLineEdit, QComboBox, QProgressBar
+from PyQt5.QtWidgets import (
+    QWidget, QPushButton, QHBoxLayout, QGroupBox, QVBoxLayout, QLineEdit, QComboBox, 
+    QProgressBar, QLabel, QFormLayout, QDoubleSpinBox, QTableWidget, QTableWidgetItem, 
+    QAbstractItemView, QHeaderView, QSpinBox
+)
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
 
-class TabRewards_gui(QWidget):
+class TabRewardsGui(QWidget):
     def __init__(self, imgDir, *args, **kwargs):
-        QWidget.__init__(self)
+        super().__init__(*args, **kwargs)
         self.imgDir = imgDir
         self.initRewardsForm()
         mainVertical = QVBoxLayout()
@@ -34,6 +36,7 @@ class TabRewards_gui(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(13)
         layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+
         # --- ROW 1
         line1 = QHBoxLayout()
         line1.addWidget(QLabel("Account HW"))
@@ -69,6 +72,7 @@ class TabRewards_gui(QWidget):
         self.btn_reload.setToolTip("Reload data from ledger device")
         line1.addWidget(self.btn_reload)
         layout.addRow(line1)
+
         #  --- ROW 2: address and copy btn
         hBox = QHBoxLayout()
         self.addySelect = QComboBox()
@@ -79,6 +83,7 @@ class TabRewards_gui(QWidget):
         self.btn_Copy.setToolTip("Copy address to clipboard")
         hBox.addWidget(self.btn_Copy)
         layout.addRow(hBox)
+
         #  --- ROW 3: UTXOs
         self.rewardsList = QVBoxLayout()
         self.rewardsList.statusLabel = QLabel('<b style="color:red">Reload Rewards</b>')
@@ -86,7 +91,6 @@ class TabRewards_gui(QWidget):
         self.rewardsList.addWidget(self.rewardsList.statusLabel)
         self.rewardsList.box = QTableWidget()
         self.rewardsList.box.setMinimumHeight(230)
-        # self.rewardsList.box.setMaximumHeight(140)
         self.rewardsList.box.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.rewardsList.box.setSelectionMode(QAbstractItemView.MultiSelection)
         self.rewardsList.box.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -95,6 +99,7 @@ class TabRewards_gui(QWidget):
         self.rewardsList.box.setRowCount(0)
         self.rewardsList.box.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
         self.rewardsList.box.verticalHeader().hide()
+
         item = QTableWidgetItem()
         item.setText("PIVs")
         item.setTextAlignment(Qt.AlignCenter)
@@ -111,8 +116,10 @@ class TabRewards_gui(QWidget):
         item.setText("TX Output N")
         item.setTextAlignment(Qt.AlignCenter)
         self.rewardsList.box.setHorizontalHeaderItem(3, item)
+
         self.rewardsList.addWidget(self.rewardsList.box)
         layout.addRow(self.rewardsList)
+
         # --- ROW 3
         hBox2 = QHBoxLayout()
         self.btn_selectAllRewards = QPushButton("Select All")
@@ -129,6 +136,7 @@ class TabRewards_gui(QWidget):
         hBox2.addWidget(self.selectedRewardsLine)
         hBox2.addStretch(1)
         layout.addRow(hBox2)
+
         # --- ROW 4
         hBox3 = QHBoxLayout()
         self.destinationLine = QLineEdit()
@@ -145,6 +153,7 @@ class TabRewards_gui(QWidget):
         self.btn_sendRewards = QPushButton("Send")
         hBox3.addWidget(self.btn_sendRewards)
         layout.addRow(QLabel("Destination Address"), hBox3)
+
         hBox4 = QHBoxLayout()
         hBox4.addStretch(1)
         self.loadingLine = QLabel("<b style='color:red'>Preparing TX.</b> Completed: ")
@@ -157,8 +166,10 @@ class TabRewards_gui(QWidget):
         self.loadingLine.hide()
         self.loadingLinePercent.hide()
         layout.addRow(hBox4)
+
         # --- Set Layout
         self.rewardsForm.setLayout(layout)
+
         # --- ROW 5
         self.btn_Cancel = QPushButton("Clear")
 

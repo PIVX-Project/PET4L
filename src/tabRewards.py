@@ -15,7 +15,7 @@ from constants import MINIMUM_FEE
 from misc import printDbg, printError, printException, getCallerName, getFunctionName, \
     persistCacheSetting, myPopUp, myPopUp_sb, DisconnectedException, checkTxInputs
 from pivx_parser import ParseTx, IsPayToColdStaking, GetDelegatedStaker
-from qt.gui_tabRewards import TabRewards_gui
+from qt.gui_tabRewards import TabRewardsGui
 from threads import ThreadFuns
 from txCache import TxCache
 from utils import checkPivxAddr
@@ -34,7 +34,7 @@ class TabRewards:
         self.suggestedFee = MINIMUM_FEE
 
         # --- Initialize GUI
-        self.ui = TabRewards_gui(self.caller.imgDir)
+        self.ui = TabRewardsGui(self.caller.imgDir)
         self.caller.tabRewards = self.ui
         self.ui.btn_Copy.setIcon(self.caller.copy_icon)
 
@@ -48,14 +48,14 @@ class TabRewards:
         self.updateFee()
 
         # Connect GUI buttons
-        self.ui.addySelect.currentIndexChanged.connect(lambda: self.onChangeSelected())
-        self.ui.rewardsList.box.itemClicked.connect(lambda: self.updateSelection())
-        self.ui.btn_reload.clicked.connect(lambda: self.loadSelection())
-        self.ui.btn_selectAllRewards.clicked.connect(lambda: self.onSelectAllRewards())
-        self.ui.btn_deselectAllRewards.clicked.connect(lambda: self.onDeselectAllRewards())
-        self.ui.btn_sendRewards.clicked.connect(lambda: self.onSendRewards())
-        self.ui.btn_Cancel.clicked.connect(lambda: self.onCancel())
-        self.ui.btn_Copy.clicked.connect(lambda: self.onCopy())
+        self.ui.addySelect.currentIndexChanged.connect(self.onChangeSelected)
+        self.ui.rewardsList.box.itemClicked.connect(self.updateSelection)
+        self.ui.btn_reload.clicked.connect(self.loadSelection)
+        self.ui.btn_selectAllRewards.clicked.connect(self.onSelectAllRewards)
+        self.ui.btn_deselectAllRewards.clicked.connect(self.onDeselectAllRewards)
+        self.ui.btn_sendRewards.clicked.connect(self.onSendRewards)
+        self.ui.btn_Cancel.clicked.connect(self.onCancel)
+        self.ui.btn_Copy.clicked.connect(self.onCopy)
 
         # Connect Signals
         self.caller.sig_UTXOsLoading.connect(self.update_loading_utxos)
@@ -72,7 +72,7 @@ class TabRewards:
         rewards = self.caller.parent.db.getRewardsList(self.curr_addr)
 
         if rewards is not None:
-            def item(value):
+            def item(value: str) -> QTableWidgetItem:
                 item = QTableWidgetItem(value)
                 item.setTextAlignment(Qt.AlignCenter)
                 item.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
@@ -93,17 +93,17 @@ class TabRewards:
                 self.ui.rewardsList.box.showRow(row)
                 if utxo['staker'] != "":
                     self.ui.rewardsList.box.item(row, 2).setIcon(self.caller.coldStaking_icon)
-                    self.ui.rewardsList.box.item(row, 2).setToolTip("Staked by <b>%s</b>" % utxo['staker'])
+                    self.ui.rewardsList.box.item(row, 2).setToolTip(f"Staked by <b>{utxo['staker']}</b>")
 
                 # make immature rewards unselectable
                 if utxo['coinstake']:
                     required = 16 if self.caller.isTestnetRPC else 101
                     if utxo['confirmations'] < required:
-                        for i in range(0, 4):
+                        for i in range(4):
                             self.ui.rewardsList.box.item(row, i).setFlags(Qt.NoItemFlags)
                             ttip = self.ui.rewardsList.box.item(row, i).toolTip()
                             self.ui.rewardsList.box.item(row, i).setToolTip(
-                                ttip + "\n(Immature - %d confirmations required)" % required)
+                                ttip + f"\n(Immature - {required} confirmations required)")
 
             self.ui.rewardsList.box.resizeColumnsToContents()
 
@@ -115,15 +115,12 @@ class TabRewards:
                 if not self.caller.rpcConnected:
                     self.ui.resetStatusLabel('<b style="color:red">PIVX wallet not connected</b>')
                 else:
-                    self.ui.resetStatusLabel('<b style="color:red">Found no Rewards for %s</b>' % self.curr_addr)
+                    self.ui.resetStatusLabel(f'<b style="color:red">Found no Rewards for {self.curr_addr}</b>')
 
-    def getSelection(self):
+    def getSelection(self) -> list:
         # Get selected rows indexes
         items = self.ui.rewardsList.box.selectedItems()
-        rows = set()
-        for i in range(0, len(items)):
-            row = items[i].row()
-            rows.add(row)
+        rows = {item.row() for item in items}
         indexes = list(rows)
         # Get UTXO info from DB for each
         selection = []
@@ -139,7 +136,7 @@ class TabRewards:
         printDbg("Checking HW device")
         if self.caller.hwStatus != 2:
             myPopUp_sb(self.caller, "crit", 'PET4L - hw device check', "Connect to HW device first")
-            printDbg("Unable to connect - hw status: %d" % self.caller.hwStatus)
+            printDbg(f"Unable to connect - hw status: {self.caller.hwStatus}")
             return None
 
         self.ui.addySelect.clear()
@@ -159,7 +156,7 @@ class TabRewards:
         self.caller.parent.cache["intExt"] = persistCacheSetting('cache_intExt', intExt)
 
         for i in range(spathFrom, spathTo + 1):
-            path = "%d'/%d/%d" % (hwAcc, intExt, i)
+            path = f"{hwAcc}'/{intExt}/{i}"
             address = self.caller.hwdevice.scanForAddress(hwAcc, i, intExt, isTestnet)
             try:
                 balance = self.caller.apiClient.getBalance(address)
@@ -167,9 +164,9 @@ class TabRewards:
                 print(e)
                 balance = 0
 
-            itemLine = "%s  --  %s" % (path, address)
-            if (balance):
-                itemLine += "   [%s PIV]" % str(balance)
+            itemLine = f"{path}  --  {address}"
+            if balance:
+                itemLine += f"   [{balance} PIV]"
 
             self.ui.addySelect.addItem(itemLine, [path, address, balance])
 
@@ -192,7 +189,7 @@ class TabRewards:
                 # Get raw tx
                 u['rawtx'] = TxCache(self.caller)[u['txid']]
                 if u['rawtx'] is None:
-                    printDbg("Unable to get raw TX with hash=%s from RPC server." % u['txid'])
+                    printDbg(f"Unable to get raw TX with hash={u['txid']} from RPC server.")
                     # Don't save UTXO if raw TX is unavailable
                     utxos.remove(u)
                 u['staker'] = ""
@@ -263,7 +260,7 @@ class TabRewards:
             self.caller.onCheckHw()
         if self.caller.hwStatus != 2:
             myPopUp_sb(self.caller, "crit", 'PET4L - hw device check', "Connect to HW device first")
-            printDbg("Unable to connect to hardware device. The device status is: %d" % self.caller.hwStatus)
+            printDbg(f"Unable to connect to hardware device. The device status is: {self.caller.hwStatus}")
             return None
 
         # SEND
@@ -277,15 +274,15 @@ class TabRewards:
         # re-connect signals
         try:
             self.caller.hwdevice.api.sigTxdone.disconnect()
-        except:
+        except Exception:
             pass
         try:
             self.caller.hwdevice.api.sigTxabort.disconnect()
-        except:
+        except Exception:
             pass
         try:
             self.caller.hwdevice.api.tx_progress.disconnect()
-        except:
+        except Exception:
             pass
         self.caller.hwdevice.api.sigTxdone.connect(gui.FinishSend)
         self.caller.hwdevice.api.sigTxabort.connect(gui.AbortSend)
@@ -301,7 +298,7 @@ class TabRewards:
             num_of_inputs = len(self.selectedRewards)
         else:
             # bulk send
-            num_of_inputs = sum([len(x['utxos']) for x in inputs])
+            num_of_inputs = sum(len(x['utxos']) for x in inputs)
         ans = checkTxInputs(self.caller, num_of_inputs)
         if ans is None or ans == QMessageBox.No:
             # emit sigTxAbort and return
@@ -310,9 +307,9 @@ class TabRewards:
 
         # LET'S GO
         if inputs is None:
-            printDbg("Sending from PIVX address  %s  to PIVX address  %s " % (self.curr_addr, self.dest_addr))
+            printDbg(f"Sending from PIVX address  {self.curr_addr}  to PIVX address  {self.dest_addr} ")
         else:
-            printDbg("Sweeping rewards to PIVX address %s " % self.dest_addr)
+            printDbg(f"Sweeping rewards to PIVX address {self.dest_addr} ")
         self.ui.rewardsList.statusLabel.hide()
         printDbg("Preparing transaction. Please wait...")
         self.ui.loadingLine.show()
@@ -374,10 +371,9 @@ class TabRewards:
                         decodedTx = ParseTx(tx_hex, self.caller.isTestnetRPC)
                         destination = decodedTx.get("vout")[0].get("scriptPubKey").get("addresses")[0]
                         amount = decodedTx.get("vout")[0].get("value")
-                        message = '<p>Broadcast signed transaction?</p><p>Destination address:<br><b>%s</b></p>' % destination
-                        message += '<p>Amount: <b>%s</b> PIV<br>' % str(round(amount / 1e8, 8))
-                        message += 'Fees: <b>%s</b> PIV <br>Size: <b>%d</b> Bytes</p>' % (
-                            str(round(self.currFee / 1e8, 8)), len(tx_hex) / 2)
+                        message = f'<p>Broadcast signed transaction?</p><p>Destination address:<br><b>{destination}</b></p>'
+                        message += f'<p>Amount: <b>{round(amount / 1e8, 8)}</b> PIV<br>'
+                        message += f'Fees: <b>{round(self.currFee / 1e8, 8)}</b> PIV <br>Size: <b>{len(tx_hex) / 2}</b> Bytes</p>'
                     except Exception as e:
                         printException(getCallerName(), getFunctionName(), "decoding exception", str(e))
                         message = '<p>Unable to decode TX- Broadcast anyway?</p>'
@@ -392,7 +388,7 @@ class TabRewards:
                         txid = self.caller.rpcClient.sendRawTransaction(tx_hex)
                         if txid is None:
                             raise Exception("Unable to send TX - connection to RPC server lost.")
-                        printDbg("Transaction sent. ID: %s" % txid)
+                        printDbg(f"Transaction sent. ID: {txid}")
                         mess2_text = "<p>Transaction successfully sent.</p>"
                         mess2 = QMessageBox(QMessageBox.Information, 'transaction Sent', mess2_text)
                         mess2.setDetailedText(txid)
@@ -431,15 +427,15 @@ class TabRewards:
         self.selectedRewards = self.getSelection()
         numOfInputs = len(self.selectedRewards)
         if numOfInputs:
-            for i in range(0, numOfInputs):
-                total += int(self.selectedRewards[i].get('satoshis'))
+            for reward in self.selectedRewards:
+                total += int(reward.get('satoshis'))
 
             # update suggested fee and selected rewards
             estimatedTxSize = (44 + numOfInputs * 148) * 1.0 / 1000  # kB
             feePerKb = self.caller.rpcClient.getFeePerKb()
             self.suggestedFee = round(feePerKb * estimatedTxSize, 8)
-            printDbg("estimatedTxSize is %s kB" % str(estimatedTxSize))
-            printDbg("suggested fee is %s PIV (%s PIV/kB)" % (str(self.suggestedFee), str(feePerKb)))
+            printDbg(f"estimatedTxSize is {estimatedTxSize} kB")
+            printDbg(f"suggested fee is {self.suggestedFee} PIV ({feePerKb} PIV/kB)")
 
             self.ui.selectedRewardsLine.setText(str(round(total / 1e8, 8)))
 
@@ -450,8 +446,6 @@ class TabRewards:
 
     def update_loading_utxos(self, percent):
         if percent < 100:
-            self.ui.resetStatusLabel('<em><b style="color:purple">Checking explorer... %d%%</b></em>' % percent)
+            self.ui.resetStatusLabel(f'<em><b style="color:purple">Checking explorer... {percent}%</b></em>')
         else:
             self.display_utxos()
-
-

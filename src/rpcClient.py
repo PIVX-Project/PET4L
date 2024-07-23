@@ -19,7 +19,6 @@ def process_RPC_exceptions(func):
         try:
             args[0].httpConnection.connect()
             return func(*args, **kwargs)
-
         except Exception as e:
             message = "Exception in RPC client"
             printException(getCallerName(True), getFunctionName(True), message, str(e))
@@ -35,11 +34,11 @@ def process_RPC_exceptions(func):
 
 class RpcClient:
 
-    def __init__(self, rpc_protocol, rpc_host, rpc_user, rpc_password):
+    def __init__(self, rpc_protocol: str, rpc_host: str, rpc_user: str, rpc_password: str):
         # Lock for threads
         self.lock = threading.RLock()
 
-        self.rpc_url = "%s://%s:%s@%s" % (rpc_protocol, rpc_user, rpc_password, rpc_host)
+        self.rpc_url = f"{rpc_protocol}://{rpc_user}:{rpc_password}@{rpc_host}"
 
         host, port = rpc_host.split(":")
         if rpc_protocol == "https":
@@ -50,65 +49,47 @@ class RpcClient:
         self.conn = AuthServiceProxy(self.rpc_url, timeout=1000, connection=self.httpConnection)
 
     @process_RPC_exceptions
-    def getBlockCount(self):
-        n = 0
+    def getBlockCount(self) -> int:
         with self.lock:
-            n = self.conn.getblockcount()
-
-        return n
+            return self.conn.getblockcount()
 
     @process_RPC_exceptions
-    def getBlockHash(self, blockNum):
-        h = None
+    def getBlockHash(self, blockNum: int) -> str:
         with self.lock:
-            h = self.conn.getblockhash(blockNum)
-
-        return h
+            return self.conn.getblockhash(blockNum)
 
     @process_RPC_exceptions
-    def getBudgetVotes(self, proposal):
-        votes = {}
+    def getBudgetVotes(self, proposal: str) -> dict:
         with self.lock:
-            votes = self.conn.getbudgetvotes(proposal)
-
-        return votes
+            return self.conn.getbudgetvotes(proposal)
 
     @process_RPC_exceptions
-    def getFeePerKb(self):
-        res = MINIMUM_FEE
+    def getFeePerKb(self) -> float:
         with self.lock:
             # get transaction data from last 200 blocks
             feePerKb = float(self.conn.getfeeinfo(200)['feeperkb'])
-            res = (feePerKb if feePerKb > MINIMUM_FEE else MINIMUM_FEE)
-
-        return res
+            return feePerKb if feePerKb > MINIMUM_FEE else MINIMUM_FEE
 
     @process_RPC_exceptions
-    def getMNStatus(self, address):
-        mnStatus = None
+    def getMNStatus(self, address: str) -> dict:
         with self.lock:
             mnStatusList = self.conn.listmasternodes(address)
             if not mnStatusList:
                 return None
             mnStatus = mnStatusList[0]
             mnStatus['mnCount'] = self.conn.getmasternodecount()['enabled']
-
-        return mnStatus
+            return mnStatus
 
     @process_RPC_exceptions
-    def getMasternodeCount(self):
-        ans = None
+    def getMasternodeCount(self) -> dict:
         with self.lock:
-            ans = self.conn.getmasternodecount()
-
-        return ans
+            return self.conn.getmasternodecount()
 
     @process_RPC_exceptions
-    def getMasternodes(self):
+    def getMasternodes(self) -> dict:
         printDbg("RPC: Getting masternode list...")
         mnList = {}
         score = []
-        masternodes = []
         with self.lock:
             masternodes = self.conn.listmasternodes()
 
@@ -120,7 +101,6 @@ class RpcClient:
                 else:
                     lastpaid_ago = now() - mn.get('lastpaid')
                     mn['score'] = min(lastpaid_ago, mn.get('activetime'))
-
             else:
                 mn['score'] = 0
 
@@ -138,17 +118,13 @@ class RpcClient:
         return mnList
 
     @process_RPC_exceptions
-    def getNextSuperBlock(self):
-        n = 0
+    def getNextSuperBlock(self) -> int:
         with self.lock:
-            n = self.conn.getnextsuperblock()
-
-        return n
+            return self.conn.getnextsuperblock()
 
     @process_RPC_exceptions
-    def getProposalsProjection(self):
+    def getProposalsProjection(self) -> list:
         printDbg("RPC: Getting proposals projection...")
-        data = []
         proposals = []
         with self.lock:
             # get budget projection JSON data
@@ -156,11 +132,12 @@ class RpcClient:
 
         for p in data:
             # create proposal-projection dictionary
-            new_proposal = {}
-            new_proposal['Name'] = p.get('Name')
-            new_proposal['Allotted'] = float(p.get("Alloted"))
-            new_proposal['Votes'] = p.get('Yeas') - p.get('Nays')
-            new_proposal['Total_Allotted'] = float(p.get('TotalBudgetAlloted'))
+            new_proposal = {
+                'Name': p.get('Name'),
+                'Allotted': float(p.get("Alloted")),
+                'Votes': p.get('Yeas') - p.get('Nays'),
+                'Total_Allotted': float(p.get('TotalBudgetAlloted'))
+            }
             # append dictionary to list
             proposals.append(new_proposal)
 
@@ -168,27 +145,20 @@ class RpcClient:
         return proposals
 
     @process_RPC_exceptions
-    def getProtocolVersion(self):
-        res = DEFAULT_PROTOCOL_VERSION
+    def getProtocolVersion(self) -> int:
         with self.lock:
             prot_version = self.conn.getinfo().get('protocolversion')
-            res = int(prot_version)
-
-        return res
+            return int(prot_version) if prot_version else DEFAULT_PROTOCOL_VERSION
 
     @process_RPC_exceptions
-    def getRawTransaction(self, txid):
-        res = None
+    def getRawTransaction(self, txid: str) -> str:
         with self.lock:
-            res = self.conn.getrawtransaction(txid)
-
-        return res
+            return self.conn.getrawtransaction(txid)
 
     @process_RPC_exceptions
-    def getStatus(self):
+    def getStatus(self) -> tuple[bool, str, int, float, bool]:
         status = False
-        statusMess = "Unable to connect to a PIVX RPC server.\n"
-        statusMess += "Either the local PIVX wallet is not open, or the remote RPC server is not responding."
+        statusMess = "Unable to connect to a PIVX RPC server.\nEither the local PIVX wallet is not open, or the remote RPC server is not responding."
         n = 0
         response_time = None
         with self.lock:
@@ -204,58 +174,38 @@ class RpcClient:
         return status, statusMess, n, response_time, isTestnet
 
     @process_RPC_exceptions
-    def isBlockchainSynced(self):
-        res = False
-        response_time = None
+    def isBlockchainSynced(self) -> tuple[bool, float]:
         with self.lock:
             status, response_time = timeThis(self.conn.mnsync, 'status')
             if status is not None:
-                res = status.get("IsBlockchainSynced")
-
-        return res, response_time
+                return status.get("IsBlockchainSynced"), response_time
+            return False, response_time
 
     @process_RPC_exceptions
-    def mnBudgetRawVote(self, mn_tx_hash, mn_tx_index, proposal_hash, vote, time, vote_sig):
-        res = None
+    def mnBudgetRawVote(self, mn_tx_hash: str, mn_tx_index: int, proposal_hash: str, vote: str, time: int, vote_sig: str) -> str:
         with self.lock:
-            res = self.conn.mnbudgetrawvote(mn_tx_hash, mn_tx_index, proposal_hash, vote, time, vote_sig)
-
-        return res
+            return self.conn.mnbudgetrawvote(mn_tx_hash, mn_tx_index, proposal_hash, vote, time, vote_sig)
 
     @process_RPC_exceptions
-    def decodemasternodebroadcast(self, work):
+    def decodemasternodebroadcast(self, work: str) -> str:
         printDbg("RPC: Decoding masternode broadcast...")
-        res = ""
         with self.lock:
-            res = self.conn.decodemasternodebroadcast(work.strip())
-
-        return res
+            return self.conn.decodemasternodebroadcast(work.strip())
 
     @process_RPC_exceptions
-    def relaymasternodebroadcast(self, work):
+    def relaymasternodebroadcast(self, work: str) -> str:
         printDbg("RPC: Relaying masternode broadcast...")
-        res = ""
         with self.lock:
-            res = self.conn.relaymasternodebroadcast(work.strip())
-
-        return res
+            return self.conn.relaymasternodebroadcast(work.strip())
 
     @process_RPC_exceptions
-    def sendRawTransaction(self, tx_hex):
-        dbg_mess = "RPC: Sending raw transaction"
-        dbg_mess += "..."
-        printDbg(dbg_mess)
-        tx_id = None
+    def sendRawTransaction(self, tx_hex: str) -> str:
+        printDbg("RPC: Sending raw transaction...")
         with self.lock:
-            tx_id = self.conn.sendrawtransaction(tx_hex, True)
-
-        return tx_id
+            return self.conn.sendrawtransaction(tx_hex, True)
 
     @process_RPC_exceptions
-    def verifyMessage(self, pivxaddress, signature, message):
+    def verifyMessage(self, pivxaddress: str, signature: str, message: str) -> bool:
         printDbg("RPC: Verifying message...")
-        res = False
         with self.lock:
-            res = self.conn.verifymessage(pivxaddress, signature, message)
-
-        return res
+            return self.conn.verifymessage(pivxaddress, signature, message)
