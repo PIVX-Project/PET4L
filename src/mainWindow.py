@@ -13,7 +13,7 @@ import threading
 from PyQt5.QtCore import pyqtSignal, Qt, QThread
 from PyQt5.QtGui import QPixmap, QColor, QPalette, QTextCursor, QFont, QIcon
 from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QGroupBox, QVBoxLayout, \
-    QFileDialog, QTextEdit, QTabWidget, QLabel, QSplitter
+    QFileDialog, QTextEdit, QTabWidget, QLabel, QSplitter, QAction, QMenuBar
 
 from apiClient import ApiClient
 from constants import starting_height, DefaultCache, wqueue
@@ -41,9 +41,8 @@ class MainWindow(QWidget):
     # signal: UTXO list loading percent (emitted by load_utxos_thread in tabRewards)
     sig_UTXOsLoading = pyqtSignal(int)
 
-
     def __init__(self, parent, imgDir):
-        super(QWidget, self).__init__(parent)
+        super().__init__(parent)
         self.parent = parent
         self.imgDir = imgDir
         self.runInThread = ThreadFuns.runInThread
@@ -79,7 +78,7 @@ class MainWindow(QWidget):
         self.hwdevice = HWdevice(self)
 
         # -- init Api Client
-        self.apiClient = ApiClient(self.isTestnetRPC)
+        self.apiClient = ApiClient(self)  # Pass 'self' as main_wnd reference
 
         # -- Create Queue to redirect stdout
         self.queue = wqueue
@@ -257,7 +256,7 @@ class MainWindow(QWidget):
                 (remote_version[0] == local_version[0] and remote_version[1] > local_version[1]) or \
                 (remote_version[0] == local_version[0] and remote_version[1] == local_version[1] and remote_version[2] >
                  local_version[2]):
-            self.versionMess = '<b style="color:red">New Version Available:</b> %s  ' % (self.gitVersion)
+            self.versionMess = f'<b style="color:red">New Version Available:</b> {self.gitVersion}  '
             self.versionMess += '(<a href="https://github.com/PIVX-Project/PET4L/releases/">download</a>)'
         else:
             self.versionMess = "You have the latest version of PET4L"
@@ -265,7 +264,7 @@ class MainWindow(QWidget):
     def updateVersion(self):
         if self.versionMess is not None:
             self.versionLabel.setText(self.versionMess)
-        printOK("Remote version: %s" % str(self.gitVersion))
+        printOK(f"Remote version: {self.gitVersion}")
 
     def onChangeSelectedHW(self, i):
         # Clear status
@@ -288,14 +287,13 @@ class MainWindow(QWidget):
         timestamp = strftime('%Y-%m-%d_%H-%M-%S', gmtime(now()))
         options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
-        fileName, _ = QFileDialog.getSaveFileName(self, "Save Logs to file", "PET4L_Logs_%s.txt" % timestamp, "All Files (*);; Text Files (*.txt)", options=options)
+        fileName, _ = QFileDialog.getSaveFileName(self, f"Save Logs to file PET4L_Logs_{timestamp}.txt", "All Files (*);; Text Files (*.txt)", options=options)
         try:
             if fileName:
-                printOK("Saving logs to %s" % fileName)
-                log_file = open(fileName, 'w+', encoding="utf-8")
-                log_text = self.consoleArea.toPlainText()
-                log_file.write(log_text)
-                log_file.close()
+                printOK(f"Saving logs to {fileName}")
+                with open(fileName, 'w+', encoding="utf-8") as log_file:
+                    log_text = self.consoleArea.toPlainText()
+                    log_file.write(log_text)
 
         except Exception as e:
             err_msg = "error writing Log file"
@@ -315,14 +313,14 @@ class MainWindow(QWidget):
 
     def showHWstatus(self):
         self.updateHWleds()
-        myPopUp_sb(self, "info", 'PET4L - hw check', "%s" % self.hwStatusMess)
+        myPopUp_sb(self, "info", 'PET4L - hw check', f"{self.hwStatusMess}")
 
     def showRPCstatus(self, server_index, fDebug):
         # Update displayed status only if selected server is not changed
         if server_index == self.header.rpcClientsBox.currentIndex():
             self.updateRPCled(fDebug)
             if fDebug:
-                myPopUp_sb(self, "info", 'PET4L - rpc check', "%s" % self.rpcStatusMess)
+                myPopUp_sb(self, "info", 'PET4L - rpc check', f"{self.rpcStatusMess}")
 
     def updateHWleds(self):
         if self.hwStatus == 1:
@@ -342,7 +340,7 @@ class MainWindow(QWidget):
             printDbg(str(e))
             pass
 
-        printDbg("status:%s - mess: %s" % (self.hwStatus, self.hwStatusMess))
+        printDbg(f"status:{self.hwStatus} - mess: {self.hwStatusMess}")
 
     def updateLastBlockLabel(self):
         text = '--'
@@ -370,9 +368,9 @@ class MainWindow(QWidget):
                 color = "green"
                 self.header.lastPingIcon.setPixmap(self.connGreen_icon)
             if self.rpcResponseTime is not None:
-                self.header.responseTimeLabel.setText("%.3f" % self.rpcResponseTime)
-                self.header.responseTimeLabel.setStyleSheet("color: %s" % color)
-                self.header.lastPingIcon.setStyleSheet("color: %s" % color)
+                self.header.responseTimeLabel.setText(f"{self.rpcResponseTime:.3f}")
+                self.header.responseTimeLabel.setStyleSheet(f"color: {color}")
+                self.header.lastPingIcon.setStyleSheet(f"color: {color}")
 
     def updateRPCled(self, fDebug=False):
         if self.rpcConnected:
@@ -403,7 +401,7 @@ class MainWindow(QWidget):
         # Add public servers (italics)
         italicsFont = QFont("Times", italic=True)
         for s in public_servers:
-            url = s["protocol"] + "://" + s["host"].split(':')[0]
+            url = f"{s['protocol']}://{s['host'].split(':')[0]}"
             self.header.rpcClientsBox.addItem(url, s)
             self.header.rpcClientsBox.setItemData(self.getServerListIndex(s), italicsFont, Qt.FontRole)
         # Add Local Wallet (bold)
@@ -413,7 +411,7 @@ class MainWindow(QWidget):
         self.header.rpcClientsBox.setItemData(self.getServerListIndex(custom_servers[0]), boldFont, Qt.FontRole)
         # Add custom servers
         for s in custom_servers[1:]:
-            url = s["protocol"] + "://" + s["host"].split(':')[0]
+            url = f"{s['protocol']}://{s['host'].split(':')[0]}"
             self.header.rpcClientsBox.addItem(url, s)
         # reset index
         if self.parent.cache['selectedRPC_index'] >= self.header.rpcClientsBox.count():
@@ -428,7 +426,7 @@ class MainWindow(QWidget):
     def updateRPCstatus(self, ctrl, fDebug=False):
         rpc_index, rpc_protocol, rpc_host, rpc_user, rpc_password = self.getRPCserver()
         if fDebug:
-            printDbg("Trying to connect to RPC %s://%s..." % (rpc_protocol, rpc_host))
+            printDbg(f"Trying to connect to RPC {rpc_protocol}://{rpc_host}...")
 
         try:
             rpcClient = RpcClient(rpc_protocol, rpc_host, rpc_user, rpc_password)
