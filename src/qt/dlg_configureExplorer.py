@@ -1,11 +1,5 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-# Copyright (c) 2024 Liquid369 (https://github.com/liquid369/)
-# Distributed under the MIT software license, see the accompanying
-# file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
-
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, \
-    QListWidget, QFrame, QFormLayout, QLineEdit, QListWidgetItem, \
+    QListWidget, QFrame, QFormLayout, QComboBox, QLineEdit, QListWidgetItem, \
     QWidget, QPushButton, QMessageBox
 
 from misc import myPopUp
@@ -22,6 +16,7 @@ class ConfigureExplorerServers_dlg(QDialog):
 
     def clearEditFrame(self):
         self.ui.url_edt.clear()
+        self.ui.network_select.setCurrentIndex(0)
 
     def initUI(self):
         self.ui = Ui_ConfigureExplorerServersDlg()
@@ -32,7 +27,7 @@ class ConfigureExplorerServers_dlg(QDialog):
         index = self.main_wnd.mainWindow.getExplorerListIndex(server)
         server_line = QWidget()
         server_row = QHBoxLayout()
-        server_text = server['url']
+        server_text = "%s" % server['url']
         if not server['isCustom']:
             server_text = "<em style='color: purple'>%s</em>" % server_text
         server_row.addWidget(QLabel(server_text))
@@ -73,6 +68,10 @@ class ConfigureExplorerServers_dlg(QDialog):
     def loadEditFrame(self, index):
         server = self.main_wnd.mainWindow.explorerServersList[index]
         self.ui.url_edt.setText(server['url'])
+        if server['isTestnet']:
+            self.ui.network_select.setCurrentIndex(1)
+        else:
+            self.ui.network_select.setCurrentIndex(0)
 
     def onAddServer(self, index=None):
         # Save current index (None for new entry)
@@ -116,18 +115,25 @@ class ConfigureExplorerServers_dlg(QDialog):
     def onSave(self):
         # Get new config data
         url = self.ui.url_edt.text()
-        # Check malformed URL
-        if url:
-            if self.changing_index is None:
-                # Save new entry in DB.
-                self.main_wnd.db.addExplorerServer(url)
+        isTestnet = self.ui.network_select.currentIndex() == 1
+        if self.changing_index is None:
+            # Check if the explorer server already exists
+            existing_servers = self.main_wnd.db.getExplorerServers()
+            if any(server['url'] == url for server in existing_servers):
+                QMessageBox.warning(self, 'Error', 'This explorer server already exists.')
             else:
-                # Edit existing entry in DB.
-                id = self.main_wnd.mainWindow.explorerServersList[self.changing_index].get('id')
-                self.main_wnd.db.editExplorerServer(url, id)
+                # Save new entry in DB.
+                self.main_wnd.db.addExplorerServer(url, isTestnet)
+        else:
+            # Edit existing entry in DB.
+            id = self.main_wnd.mainWindow.explorerServersList[self.changing_index].get('id')
+            self.main_wnd.db.editExplorerServer(url, isTestnet, id)
 
-            # call onCancel
-            self.onCancel()
+        # Reload explorer list in main window
+        self.main_wnd.mainWindow.updateExplorerList()
+
+        # call onCancel
+        self.onCancel()
 
 
 class Ui_ConfigureExplorerServersDlg(object):
@@ -155,7 +161,12 @@ class Ui_ConfigureExplorerServersDlg(object):
         frameLayout.setContentsMargins(5, 10, 5, 5)
         frameLayout.setSpacing(7)
         self.url_edt = QLineEdit()
-        frameLayout.addRow(QLabel("Explorer URL"), self.url_edt)
+        frameLayout.addRow(QLabel("URL"), self.url_edt)
+        hBox = QHBoxLayout()
+        self.network_select = QComboBox()
+        self.network_select.addItems(['Mainnet', 'Testnet'])
+        hBox.addWidget(self.network_select)
+        frameLayout.addRow(QLabel("Network"), hBox)
         hBox2 = QHBoxLayout()
         self.cancel_btn = QPushButton("Cancel")
         self.save_btn = QPushButton("Save")

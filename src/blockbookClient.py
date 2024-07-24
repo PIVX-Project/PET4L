@@ -6,8 +6,7 @@
 
 import requests
 
-from misc import getCallerName, getFunctionName, printException
-
+from misc import getCallerName, getFunctionName, printException, myPopUp
 
 def process_blockbook_exceptions(func):
     def process_blockbook_exceptions_int(*args, **kwargs):
@@ -15,18 +14,10 @@ def process_blockbook_exceptions(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            if client.isTestnet:
-                new_url = "https://testnet.fuzzbawls.pw"
-            else:
-                new_url = "https://zkbitcoin.com/"
-            message = "BlockBook Client exception on %s\nTrying backup server %s" % (client.url, new_url)
+            message = "BlockBook Client exception on %s" % (client.url)
             printException(getCallerName(True), getFunctionName(True), message, str(e))
-            try:
-                client.url = new_url
-                return func(*args, **kwargs)
-
-            except Exception:
-                raise
+            myPopUp(None, QMessageBox.Critical, "Explorer Error", "Failed to connect to Explorer URL: %s\n%s" % (client.url, str(e)))
+            raise
 
     return process_blockbook_exceptions_int
 
@@ -38,10 +29,7 @@ class BlockBookClient:
         self.loadURL()
 
     def loadURL(self):
-        if self.isTestnet:
-            self.url = self.main_wnd.getExplorerURL('testnet')
-        else:
-            self.url = self.main_wnd.getExplorerURL('mainnet')
+        self.url = self.main_wnd.getExplorerServer()
 
     def checkResponse(self, method, param=""):
         url = self.url + "/api/%s" % method

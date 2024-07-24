@@ -118,35 +118,56 @@ class Database:
 
             # Tables for RPC Servers
             cursor.execute("CREATE TABLE IF NOT EXISTS PUBLIC_RPC_SERVERS("
-                           " id INTEGER PRIMARY KEY, protocol TEXT, host TEXT,"
-                           " user TEXT, pass TEXT)")
+                        " id INTEGER PRIMARY KEY, protocol TEXT, host TEXT,"
+                        " user TEXT, pass TEXT)")
 
             cursor.execute("CREATE TABLE IF NOT EXISTS CUSTOM_RPC_SERVERS("
-                           " id INTEGER PRIMARY KEY, protocol TEXT, host TEXT,"
-                           " user TEXT, pass TEXT)")
+                        " id INTEGER PRIMARY KEY, protocol TEXT, host TEXT,"
+                        " user TEXT, pass TEXT)")
+
+            # Table for Explorers
+            cursor.execute("CREATE TABLE IF NOT EXISTS EXPLORER_SERVERS("
+                        " id INTEGER PRIMARY KEY, url TEXT, isTestnet BOOLEAN, isCustom BOOLEAN)")
+
+            # Add the isTestnet and isCustom columns if they don't exist
+            try:
+                cursor.execute("ALTER TABLE EXPLORER_SERVERS ADD COLUMN isTestnet BOOLEAN")
+            except sqlite3.OperationalError as e:
+                if 'duplicate column name: isTestnet' in str(e):
+                    pass  # The column already exists
+                else:
+                    raise
+
+            try:
+                cursor.execute("ALTER TABLE EXPLORER_SERVERS ADD COLUMN isCustom BOOLEAN")
+            except sqlite3.OperationalError as e:
+                if 'duplicate column name: isCustom' in str(e):
+                    pass  # The column already exists
+                else:
+                    raise
 
             self.initTable_RPC(cursor)
-
-            # Table for Explorer Servers
-            cursor.execute("CREATE TABLE IF NOT EXISTS EXPLORER_SERVERS("
-                           " id INTEGER PRIMARY KEY, url TEXT, is_custom BOOLEAN)")
-
             self.initTable_Explorer(cursor)
 
             # Tables for Utxos
             cursor.execute("CREATE TABLE IF NOT EXISTS UTXOS("
-                           " tx_hash TEXT, tx_ouput_n INTEGER, satoshis INTEGER, confirmations INTEGER,"
-                           " script TEXT, receiver TEXT, staker TEXT, coinstake BOOLEAN,"
-                           " PRIMARY KEY (tx_hash, tx_ouput_n))")
+                        " tx_hash TEXT, tx_ouput_n INTEGER, satoshis INTEGER, confirmations INTEGER,"
+                        " script TEXT, receiver TEXT, staker TEXT, coinstake BOOLEAN,"
+                        " PRIMARY KEY (tx_hash, tx_ouput_n))")
 
             cursor.execute("CREATE TABLE IF NOT EXISTS RAWTXES("
-                           " tx_hash TEXT PRIMARY KEY,  rawtx TEXT, lastfetch INTEGER)")
+                        " tx_hash TEXT PRIMARY KEY,  rawtx TEXT, lastfetch INTEGER)")
 
             printDbg("DB: Tables initialized")
 
         except Exception as e:
             err_msg = 'error initializing tables'
             printException(getCallerName(), getFunctionName(), err_msg, e.args)
+
+    def initTable_Explorer(self, cursor):
+        # Insert default explorers if needed
+        cursor.execute("INSERT OR IGNORE INTO EXPLORER_SERVERS (url, isTestnet, isCustom) VALUES (?, ?, ?)", ("https://explorer.duddino.com", False, False))
+        cursor.execute("INSERT OR IGNORE INTO EXPLORER_SERVERS (url, isTestnet, isCustom) VALUES (?, ?, ?)", ("https://testnet.duddino.com", True, False))
 
     def initTable_RPC(self, cursor):
         s = trusted_RPC_Servers
@@ -163,14 +184,6 @@ class Database:
         cursor.execute("INSERT OR IGNORE INTO CUSTOM_RPC_SERVERS VALUES"
                        " (?, ?, ?, ?, ?);",
                        (0, "http", "127.0.0.1:51473", "rpcUser", "rpcPass"))
-
-    def initTable_Explorer(self, cursor):
-        # Insert Default explorer servers
-        cursor.execute("INSERT OR REPLACE INTO EXPLORER_SERVERS VALUES"
-                       " (?, ?, ?),"
-                       " (?, ?, ?);",
-                       (1, "https://explorer.duddino.com/", 0,
-                        2, "https://testnet.duddino.com/", 0))
 
     '''
     General methods
@@ -316,78 +329,53 @@ class Database:
     Explorer servers methods
     '''
 
-    def addExplorerServer(self, url):
+    def addExplorerServer(self, url, isTestnet):
         printDbg("DB: Adding new Explorer server...")
-        added_Explorer = False
         try:
             cursor = self.getCursor()
 
-            cursor.execute("INSERT INTO EXPLORER_SERVERS (url, is_custom) "
-                           "VALUES (?, ?)",
-                           (url, True)
-                           )
-            added_Explorer = True
-            printDbg("DB: Explorer server added")
+            # Check if the explorer server already exists
+            cursor.execute("SELECT COUNT(*) FROM EXPLORER_SERVERS WHERE url = ?", (url,))
+            count = cursor.fetchone()[0]
+
+            if count == 0:
+                cursor.execute("INSERT INTO EXPLORER_SERVERS (url, isTestnet, isCustom) "
+                            "VALUES (?, ?, ?)", (url, isTestnet, True))
+                printDbg("DB: Explorer server added")
+            else:
+                printDbg("DB: Explorer server already exists")
 
         except Exception as e:
             err_msg = 'error adding Explorer server entry to DB'
             printException(getCallerName(), getFunctionName(), err_msg, e.args)
         finally:
             self.releaseCursor()
-            if added_Explorer:
-                self.app.mainWindow.updateExplorerList()
 
-    def editExplorerServer(self, id, url):
+    def editExplorerServer(self, url, isTestnet, id):
         printDbg("DB: Editing Explorer server with id %d" % id)
-        changed_Explorer = False
         try:
             cursor = self.getCursor()
 
             cursor.execute("UPDATE EXPLORER_SERVERS "
-                           "SET url = ?"
-                           "WHERE id = ?",
-                           (url, id)
-                           )
-            changed_Explorer = True
+                        "SET url = ?, isTestnet = ? "
+                        "WHERE id = ?", (url, isTestnet, id))
 
         except Exception as e:
             err_msg = 'error editing Explorer server entry to DB'
             printException(getCallerName(), getFunctionName(), err_msg, e.args)
         finally:
             self.releaseCursor()
-            if changed_Explorer:
-                self.app.mainWindow.updateExplorerList()
 
-    def removeExplorerServer(self, id):
-        printDbg("DB: Remove Explorer server with id %d" % id)
-        removed_Explorer = False
-        try:
-            cursor = self.getCursor()
-            cursor.execute("DELETE FROM EXPLORER_SERVERS"
-                           " WHERE id=?", (id,))
-            removed_Explorer = True
 
-        except Exception as e:
-            err_msg = 'error removing Explorer servers from database'
-            printException(getCallerName(), getFunctionName(), err_msg, e.args)
-
-        finally:
-            self.releaseCursor(vacuum=True)
-            if removed_Explorer:
-                self.app.mainWindow.updateExplorerList()
-
-    def getExplorerServers(self, custom, id=None):
+    def getExplorerServers(self, isTestnet=None):
         tableName = "EXPLORER_SERVERS"
-        if id is not None:
-            printDbg("DB: Getting Explorer server with id %d from table %s" % (id, tableName))
-        else:
-            printDbg("DB: Getting all Explorer servers from table %s" % tableName)
+        printDbg("DB: Getting Explorer servers from table %s" % tableName)
         try:
             cursor = self.getCursor()
-            if id is None:
-                cursor.execute("SELECT * FROM %s WHERE is_custom = ?" % tableName, (custom,))
+            if isTestnet is None:
+                cursor.execute("SELECT * FROM %s" % tableName)
             else:
-                cursor.execute("SELECT * FROM %s WHERE id = ? AND is_custom = ?" % tableName, (id, custom))
+                cursor.execute("SELECT * FROM %s WHERE isTestnet = ?" % tableName, (isTestnet,))
             rows = cursor.fetchall()
 
         except Exception as e:
@@ -402,13 +390,24 @@ class Database:
             server = {}
             server["id"] = row[0]
             server["url"] = row[1]
-            server["isCustom"] = bool(row[2])
+            server["isTestnet"] = row[2]
+            server["isCustom"] = row[3]
             server_list.append(server)
 
-        if id is not None:
-            return server_list[0]
-
         return server_list
+
+    def removeExplorerServer(self, id):
+        printDbg("DB: Remove Explorer server with id %d" % id)
+        try:
+            cursor = self.getCursor()
+            cursor.execute("DELETE FROM EXPLORER_SERVERS WHERE id = ?", (id,))
+            printDbg("DB: Explorer server removed")
+
+        except Exception as e:
+            err_msg = 'error removing Explorer server from database'
+            printException(getCallerName(), getFunctionName(), err_msg, e.args)
+        finally:
+            self.releaseCursor(vacuum=True)
 
     '''
     UTXOS methods
