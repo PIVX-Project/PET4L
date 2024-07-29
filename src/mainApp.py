@@ -19,7 +19,7 @@ from mainWindow import MainWindow
 from constants import user_dir, SECONDS_IN_2_MONTHS
 from qt.dlg_configureRPCservers import ConfigureRPCservers_dlg
 from qt.dlg_signmessage import SignMessage_dlg
-
+from qt.dlg_configureExplorer import ConfigureExplorerServers_dlg
 
 class ServiceExit(Exception):
     """
@@ -37,6 +37,8 @@ def service_shutdown(signum, frame):
 class App(QMainWindow):
     # Signal emitted from database
     sig_changed_rpcServers = pyqtSignal()
+    # Signal: Explorer list has been reloaded (emitted by DB)
+    sig_ExplorerListReloaded = pyqtSignal()
 
     def __init__(self, imgDir, app, start_args):
         # Create the userdir if it doesn't exist
@@ -93,12 +95,17 @@ class App(QMainWindow):
         # Create main window
         self.mainWindow = MainWindow(self, imgDir)
         self.setCentralWidget(self.mainWindow)
+        # Connect the signal to the appropriate slot in the main window
+        self.sig_ExplorerListReloaded.connect(self.mainWindow.updateExplorerList)
         # Add RPC server menu
         mainMenu = self.menuBar()
         confMenu = mainMenu.addMenu('Setup')
         self.rpcConfMenu = QAction(self.pivx_icon, 'RPC Servers config...', self)
         self.rpcConfMenu.triggered.connect(self.onEditRPCServer)
         confMenu.addAction(self.rpcConfMenu)
+        self.explorerConfMenu = QAction(self.pivx_icon, 'Explorer Servers config...', self)
+        self.explorerConfMenu.triggered.connect(self.onEditExplorerServer)
+        confMenu.addAction(self.explorerConfMenu)
         toolsMenu = mainMenu.addMenu('Tools')
         self.signVerifyAction = QAction('Sign/Verify message', self)
         self.signVerifyAction.triggered.connect(self.onSignVerifyMessage)
@@ -140,6 +147,12 @@ class App(QMainWindow):
         ui = ConfigureRPCservers_dlg(self)
         if ui.exec():
             printDbg("Configuring RPC Servers...")
+
+    def onEditExplorerServer(self):
+        # Create Dialog
+        ui = ConfigureExplorerServers_dlg(self)
+        if ui.exec():
+            printDbg("Configuring Explorer Servers...")
 
     def onSignVerifyMessage(self):
         # Create Dialog

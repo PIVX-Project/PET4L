@@ -70,4 +70,14 @@ class GuiHeader(QWidget):
         self.centralBox.addWidget(self.hwLed, 1, 3)
         layout.addLayout(self.centralBox)
         layout.addStretch(1)
+        # Explorer Clients Box
+        label4 = QLabel("Explorer")
+        self.centralBox.addWidget(label4, 2, 0)
+        self.explorerClientsBox = QComboBox()
+        self.explorerClientsBox.setToolTip("Select Explorer Server")
+        #self.explorerClientsBox.setItemDelegate(AlignDelegate())
+        layout.addWidget(self.explorerClientsBox)
+        self.centralBox.addWidget(self.explorerClientsBox, 2, 1)
+        self.explorerClientsBox.currentIndexChanged.connect(caller.onChangeSelectedExplorer)
+
         self.setLayout(layout)
