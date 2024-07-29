@@ -2,17 +2,18 @@ from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, \
     QListWidget, QFrame, QFormLayout, QComboBox, QLineEdit, QListWidgetItem, \
     QWidget, QPushButton, QMessageBox
 
-from misc import myPopUp
+from misc import myPopUp, printDbg
+
 
 class ConfigureExplorerServers_dlg(QDialog):
     def __init__(self, main_wnd):
-        QDialog.__init__(self, parent=main_wnd)
-        self.main_wnd = main_wnd
+        super().__init__(parent=main_wnd)
+        self.main_wnd = main_wnd.mainWindow
         self.setWindowTitle('Explorer Servers Configuration')
         self.changing_index = None
         self.initUI()
         self.loadServers()
-        self.main_wnd.mainWindow.sig_ExplorerListReloaded.connect(self.loadServers)
+        self.main_wnd.parent.sig_ExplorerListReloaded.connect(self.loadServers)
 
     def clearEditFrame(self):
         self.ui.url_edt.clear()
@@ -24,29 +25,31 @@ class ConfigureExplorerServers_dlg(QDialog):
 
     def insert_server_list(self, server):
         id = server['id']
-        index = self.main_wnd.mainWindow.getExplorerListIndex(server)
+        index = self.main_wnd.getExplorerListIndex(server)
         server_line = QWidget()
         server_row = QHBoxLayout()
         server_text = "%s" % server['url']
+        if server['isCustom'] is None:
+            server['isCustom'] = False
         if not server['isCustom']:
             server_text = "<em style='color: purple'>%s</em>" % server_text
         server_row.addWidget(QLabel(server_text))
         server_row.addStretch(1)
         #  -- Edit button
         editBtn = QPushButton()
-        editBtn.setIcon(self.main_wnd.mainWindow.editMN_icon)
+        editBtn.setIcon(self.main_wnd.editMN_icon)
         editBtn.setToolTip("Edit server configuration")
+        editBtn.setEnabled(server['isCustom'])
         if not server['isCustom']:
-            editBtn.setDisabled(True)
             editBtn.setToolTip('Default servers are not editable')
         editBtn.clicked.connect(lambda: self.onAddServer(index))
         server_row.addWidget(editBtn)
         #  -- Remove button
         removeBtn = QPushButton()
-        removeBtn.setIcon(self.main_wnd.mainWindow.removeMN_icon)
+        removeBtn.setIcon(self.main_wnd.removeMN_icon)
         removeBtn.setToolTip("Remove server configuration")
+        removeBtn.setEnabled(server['isCustom'])
         if not server['isCustom']:
-            removeBtn.setDisabled(True)
             removeBtn.setToolTip('Cannot remove default servers')
         removeBtn.clicked.connect(lambda: self.onRemoveServer(index))
         server_row.addWidget(removeBtn)
@@ -62,11 +65,11 @@ class ConfigureExplorerServers_dlg(QDialog):
         self.ui.serversBox.clear()
         # Fill serversBox
         self.serverItems = {}
-        for server in self.main_wnd.mainWindow.explorerServersList:
+        for server in self.main_wnd.explorerServersList:
             self.insert_server_list(server)
 
     def loadEditFrame(self, index):
-        server = self.main_wnd.mainWindow.explorerServersList[index]
+        server = self.main_wnd.explorerServersList[index]
         self.ui.url_edt.setText(server['url'])
         if server['isTestnet']:
             self.ui.network_select.setCurrentIndex(1)
@@ -105,32 +108,30 @@ class ConfigureExplorerServers_dlg(QDialog):
 
     def onRemoveServer(self, index):
         mess = "Are you sure you want to remove server with index %d (%s) from list?" % (
-            index, self.main_wnd.mainWindow.explorerServersList[index].get('url'))
+            index, self.main_wnd.explorerServersList[index].get('url'))
         ans = myPopUp(self, QMessageBox.Question, 'PET4L - remove server', mess)
         if ans == QMessageBox.Yes:
             # Remove entry from database
-            id = self.main_wnd.mainWindow.explorerServersList[index].get('id')
+            id = self.main_wnd.explorerServersList[index].get('id')
             self.main_wnd.db.removeExplorerServer(id)
+            # Reload explorer list in main window
+            self.main_wnd.updateExplorerList()
+            self.loadServers()
 
     def onSave(self):
         # Get new config data
         url = self.ui.url_edt.text()
         isTestnet = self.ui.network_select.currentIndex() == 1
         if self.changing_index is None:
-            # Check if the explorer server already exists
-            existing_servers = self.main_wnd.db.getExplorerServers()
-            if any(server['url'] == url for server in existing_servers):
-                QMessageBox.warning(self, 'Error', 'This explorer server already exists.')
-            else:
-                # Save new entry in DB.
-                self.main_wnd.db.addExplorerServer(url, isTestnet)
+            self.main_wnd.db.addExplorerServer(url, isTestnet)
         else:
             # Edit existing entry in DB.
-            id = self.main_wnd.mainWindow.explorerServersList[self.changing_index].get('id')
+            id = self.main_wnd.explorerServersList[self.changing_index].get('id')
             self.main_wnd.db.editExplorerServer(url, isTestnet, id)
 
         # Reload explorer list in main window
-        self.main_wnd.mainWindow.updateExplorerList()
+        self.main_wnd.updateExplorerList()
+        self.loadServers()
 
         # call onCancel
         self.onCancel()

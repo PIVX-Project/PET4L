@@ -74,6 +74,7 @@ class MainWindow(QWidget):
         # -- Load RPC Servers list (init selection and self.isTestnet)
         self.updateRPClist()
         # -- Load Explorer Servers list
+        self.explorerServersList = []
         self.updateExplorerList()
 
         # -- Init HW selection
@@ -170,6 +171,7 @@ class MainWindow(QWidget):
         self.sig_clearRPCstatus.connect(self.clearRPCstatus)
         self.sig_RPCstatusUpdated.connect(self.showRPCstatus)
         self.parent.sig_changed_rpcServers.connect(self.updateRPClist)
+        self.parent.sig_ExplorerListReloaded.connect(self.updateExplorerList)
 
     def getRPCserver(self):
         itemData = self.header.rpcClientsBox.itemData(self.header.rpcClientsBox.currentIndex())
@@ -297,12 +299,6 @@ class MainWindow(QWidget):
             # persist setting
             self.parent.cache['selectedRPC_index'] = persistCacheSetting('cache_RPCindex', i)
             self.runInThread(self.updateRPCstatus, (True,), )
-
-    def onChangeSelectedExplorer(self, i):
-        # Don't update when we are clearing the box
-        if not self.updatingExplorerbox:
-            self.parent.cache['selectedExplorer_index'] = persistCacheSetting('cache_Explorerindex', i)
-            self.updateExplorerSelected(True)
 
     def onCleanConsole(self):
         self.consoleArea.clear()
@@ -450,7 +446,7 @@ class MainWindow(QWidget):
         self.sig_RPClistReloaded.emit()
 
     def updateExplorerList(self):
-        explorers = self.parent.db.getExplorerServers(isTestnet=self.isTestnetRPC)
+        explorers = self.parent.db.getExplorerServers()
         self.explorerServersList = explorers
 
         # Clear the explorer clients box and add the explorers
@@ -473,24 +469,45 @@ class MainWindow(QWidget):
             printDbg("Selected Explorer URL: %s" % selected_explorer["url"])
 
     def onChangeSelectedExplorer(self, i):
-        # Don't update when we are clearing the box
-        if not self.updatingExplorerbox:
-            self.parent.cache['selectedExplorer_index'] = persistCacheSetting('cache_Explorerindex', i)
-            self.updateExplorerSelected(True)
+        # Ensure apiClient is initialized
+        if not hasattr(self, 'apiClient') or self.apiClient is None:
+            printDbg("Initializing apiClient in onChangeSelectedExplorer")
+            self.apiClient = ApiClient(self)
+        
+        # Update the selected explorer index and log the new selection
+        self.parent.cache['selectedExplorer_index'] = i
+        selected_explorer = self.header.explorerClientsBox.itemData(i)
+        if selected_explorer:
+            printDbg("Selected Explorer URL: %s" % selected_explorer["url"])
+            # Update the API client URL
+            if hasattr(self.apiClient, 'api'):
+                self.apiClient.api.url = selected_explorer["url"]
+            else:
+                printDbg("Error: self.apiClient.api attribute does not exist.")
 
     def getExplorerURL(self, network):
         # Check if explorerServersList is empty
         if not self.explorerServersList:
-            # Handle the empty list case
+            printDbg(f"No explorers found for {network}, reinitializing with defaults.")
+            self.reinitializeExplorerServers()
+
+        # After reinitialization, check again if the list is still empty
+        if not self.explorerServersList:
             if network == 'testnet':
                 default_url = "https://testnet.duddino.com"
             else:
                 default_url = "https://explorer.duddino.com"
-            printDbg(f"No explorers found for {network}, using default: {default_url}")
+            printDbg(f"Reinitialization failed, using default: {default_url}")
             return default_url
 
-        # Return the first URL in the list if not empty
-        return self.explorerServersList[0]['url']
+        # Filter the explorer list based on the network
+        filtered_explorers = [explorer for explorer in self.explorerServersList if explorer['isTestnet'] == (network == 'testnet')]
+
+        # Return the first URL in the filtered list if not empty, otherwise return the first in the full list
+        if filtered_explorers:
+            return filtered_explorers[0]['url']
+        else:
+            return self.explorerServersList[0]['url']
 
     def updateRPCstatus(self, ctrl, fDebug=False):
         rpc_index, rpc_protocol, rpc_host, rpc_user, rpc_password = self.getRPCserver()

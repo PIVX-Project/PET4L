@@ -53,6 +53,11 @@ trusted_RPC_Servers = [
     ["https", "latvia.fuzzbawls.pw:8080", "spmtUser", "8X88u7TuefPm7mQaJY52"],
     ["https", "charlotte.fuzzbawls.pw:8080", "spmtUser", "ZyD936tm9dvqmMP8A777"]]
 
+trusted_explorers = [
+    ["https://explorer.duddino.com/", False, False],
+    ["https://testnet.duddino.com/", True, False],
+    ["https://zkbitcoin.com/", False, False]
+]
 
 HW_devices = [
     # (model name, api index)

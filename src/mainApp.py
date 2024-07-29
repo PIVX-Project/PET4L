@@ -37,6 +37,8 @@ def service_shutdown(signum, frame):
 class App(QMainWindow):
     # Signal emitted from database
     sig_changed_rpcServers = pyqtSignal()
+    # Signal: Explorer list has been reloaded (emitted by DB)
+    sig_ExplorerListReloaded = pyqtSignal()
 
     def __init__(self, imgDir, app, start_args):
         # Create the userdir if it doesn't exist
@@ -93,6 +95,8 @@ class App(QMainWindow):
         # Create main window
         self.mainWindow = MainWindow(self, imgDir)
         self.setCentralWidget(self.mainWindow)
+        # Connect the signal to the appropriate slot in the main window
+        self.sig_ExplorerListReloaded.connect(self.mainWindow.updateExplorerList)
         # Add RPC server menu
         mainMenu = self.menuBar()
         confMenu = mainMenu.addMenu('Setup')

@@ -6,7 +6,7 @@
 
 import requests
 
-from misc import getCallerName, getFunctionName, printException, myPopUp
+from misc import getCallerName, getFunctionName, printException, myPopUp, printDbg
 
 def process_blockbook_exceptions(func):
     def process_blockbook_exceptions_int(*args, **kwargs):
@@ -26,10 +26,15 @@ class BlockBookClient:
     def __init__(self, main_wnd, isTestnet=False):
         self.main_wnd = main_wnd
         self.isTestnet = isTestnet
+        self.url = ""
         self.loadURL()
 
     def loadURL(self):
-        self.url = self.main_wnd.getExplorerServer()
+        if self.isTestnet:
+            self.url = self.main_wnd.getExplorerURL('testnet')
+        else:
+            self.url = self.main_wnd.getExplorerURL('mainnet')
+        printDbg(f"Using Explorer URL: {self.url}")
 
     def checkResponse(self, method, param=""):
         url = self.url + "/api/%s" % method
