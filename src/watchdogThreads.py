@@ -12,13 +12,13 @@ from PyQt5.Qt import QObject
 from misc import printOK
 
 
-class CtrlObject(object):
+class CtrlObject:
     pass
 
 
 class RpcWatchdog(QObject):
     def __init__(self, control_tab, timer_off=10, timer_on=120, *args, **kwargs):
-        QObject.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.firstLoop = True
         self.shutdown_flag = Event()
         self.control_tab = control_tab

@@ -23,7 +23,7 @@ from pivx_parser import ParseTx
 from threads import ThreadFuns
 from txCache import TxCache
 
-from qt.dlg_pinMatrix import PinMatrix_dlg
+from qt.dlg_pinMatrix import PinMatrixDlg
 
 
 def process_trezor_exceptions(func):
@@ -47,21 +47,15 @@ def process_trezor_exceptions(func):
 
 
 class TrezorApi(QObject):
-    # signal: sig1 (thread) is done - emitted by signMessageFinish
     sig1done = pyqtSignal(str)
-    # signal: sigtx (thread) is done - emitted by signTxFinish
     sigTxdone = pyqtSignal(bytearray, str)
-    # signal: sigtx (thread) is done (aborted) - emitted by signTxFinish
     sigTxabort = pyqtSignal()
-    # signal: tx_progress percent - emitted by perepare_transfer_tx_bulk
     tx_progress = pyqtSignal(int)
-    # signal: sig_progress percent - emitted by signTxSign
     sig_progress = pyqtSignal(int)
-    # signal: sig_disconnected -emitted with DisconnectedException
     sig_disconnected = pyqtSignal(str)
 
     def __init__(self, model, main_wnd, *args, **kwargs):
-        QObject.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.model = model  # index of HW_devices
         self.main_wnd = main_wnd
         self.messages = [
@@ -71,7 +65,6 @@ class TrezorApi(QObject):
             "Wrong device model detected.",
             "Wrong PIN inserted"
         ]
-        # Device Lock for threads
         self.lock = threading.RLock()
         self.status = 0
         self.client = None
@@ -83,9 +76,7 @@ class TrezorApi(QObject):
         if utxo['staker'] != "":
             printException(getCallerName(), getFunctionName(), "Unable to sing P2CS on Trezor", "")
             return
-        # Update amount
         self.amount += int(utxo['satoshis'])
-        # Add input
         address_n = parse_path(bip32_path)
         prev_hash = binascii.unhexlify(utxo['txid'])
         it = trezor_proto.TxInputType(
@@ -120,9 +111,7 @@ class TrezorApi(QObject):
             self.status = 0
             devices = enumerate_devices()
             if not len(devices):
-                # No device connected
                 return
-            # Use the first device for now
             d = devices[0]
             ui = TrezorUi()
             try:
@@ -138,13 +127,10 @@ class TrezorApi(QObject):
             model = self.client.features.model or "1"
             if not self.checkModel(model):
                 self.status = 3
-                self.messages[3] = "Wrong device model (%s) detected.\nLooking for model %s." % (
-                    HW_devices[self.model][0], model
-                )
+                self.messages[3] = f"Wrong device model ({model}) detected.\nLooking for model {HW_devices[self.model][0]}."
                 return
             required_version = MINIMUM_FIRMWARE_VERSION[model]
-            printDbg("Current version is %s (minimum required: %s)" % (str(self.client.version), str(required_version)))
-            # Check device is unlocked
+            printDbg(f"Current version is {str(self.client.version)} (minimum required: {str(required_version)})")
             bip32_path = parse_path(MPATH + "%d'/0/%d" % (0, 0))
             _ = btc.get_address(self.client, 'PIVX', bip32_path, False)
             self.status = 2
@@ -161,7 +147,6 @@ class TrezorApi(QObject):
                     json_tx = ParseTx(raw_tx)
                     txes[prev_hash] = self.json_to_tx(json_tx)
 
-                # completion percent emitted
                 curr_utxo_checked += 1
                 completion = int(95 * curr_utxo_checked / num_of_txes)
                 self.tx_progress.emit(completion)
@@ -176,7 +161,6 @@ class TrezorApi(QObject):
         t.bin_outputs = [self.json_to_bin_output(output) for output in jtx["vout"]]
         return t
 
-
     def json_to_input(self, input):
         i = trezor_proto.TxInputType()
         if "coinbase" in input:
@@ -189,7 +173,6 @@ class TrezorApi(QObject):
             i.script_sig = bytes.fromhex(input["scriptSig"]["hex"])
         i.sequence = input["sequence"]
         return i
-
 
     def json_to_bin_output(self, output):
         o = trezor_proto.TxOutputBinType()
@@ -204,13 +187,11 @@ class TrezorApi(QObject):
             self.amount = 0
 
             for mnode in rewardsArray:
-                # Add proper HW path (for current device) on each utxo
                 if isTestnet:
                     mnode['path'] = MPATH_TESTNET + mnode['path']
                 else:
                     mnode['path'] = MPATH + mnode['path']
 
-                # Create a TX input with each utxo
                 for utxo in mnode['utxos']:
                     self.append_inputs_to_TX(utxo, mnode['path'], inputs)
 
@@ -230,10 +211,9 @@ class TrezorApi(QObject):
 
             self.mBox2 = QMessageBox(caller)
             self.messageText = "<p>Signing transaction...</p>"
-            # messageText += "From bip32_path: <b>%s</b><br><br>" % str(bip32_path)
-            self.messageText += "<p>Payment to:<br><b>%s</b></p>" % dest_address
-            self.messageText += "<p>Net amount:<br><b>%s</b> PIV</p>" % str(round(self.amount / 1e8, 8))
-            self.messageText += "<p>Fees:<br><b>%s</b> PIV<p>" % str(round(int(tx_fee) / 1e8, 8))
+            self.messageText += f"<p>Payment to:<br><b>{dest_address}</b></p>"
+            self.messageText += f"<p>Net amount:<br><b>{str(round(self.amount / 1e8, 8))}</b> PIV</p>"
+            self.messageText += f"<p>Fees:<br><b>{str(round(int(tx_fee) / 1e8, 8))}</b> PIV<p>"
             messageText = self.messageText + "Signature Progress: 0 %"
             self.mBox2.setText(messageText)
             self.setBoxIcon(self.mBox2, caller)
@@ -281,17 +261,14 @@ class TrezorApi(QObject):
             path = MPATH_TESTNET + hwpath
         else:
             path = MPATH + hwpath
-        # Connection pop-up
         self.mBox = QMessageBox(caller)
-        messageText = "Check display of your hardware device\n\n- message:\n\n%s\n\n-path:\t%s\n" % (
-            splitString(message, 32), path)
+        messageText = f"Check display of your hardware device\n\n- message:\n\n{splitString(message, 32)}\n\n-path:\t{path}\n"
         self.mBox.setText(messageText)
         self.setBoxIcon(self.mBox, caller)
         self.mBox.setWindowTitle("CHECK YOUR TREZOR")
         self.mBox.setStandardButtons(QMessageBox.NoButton)
         self.mBox.show()
 
-        # Sign message
         ThreadFuns.runInThread(self.signMessageSign, (path, message, isTestnet), self.signMessageFinish)
 
     @process_trezor_exceptions
@@ -331,29 +308,23 @@ class TrezorApi(QObject):
     def signTxFinish(self):
         self.mBox2.accept()
         if self.tx_raw is not None:
-            # Signal to be catched by FinishSend on TabRewards / dlg_sewwpAll
             self.sigTxdone.emit(self.tx_raw, str(round(self.amount / 1e8, 8)))
-
         else:
             printOK("Transaction refused by the user")
             self.sigTxabort.emit()
 
     def updateSigProgress(self, percent):
-        # -1 simply adds a waiting message to the actual progress
         if percent == -1:
             t = self.mBox2.text()
             messageText = t + "<br>Please confirm action on your Trezor device..."
         else:
-            messageText = self.messageText + "Signature Progress: <b style='color:red'>" + str(percent) + " %</b>"
+            messageText = self.messageText + f"Signature Progress: <b style='color:red'>{percent} %</b>"
         self.mBox2.setText(messageText)
         QApplication.processEvents()
 
 
-# From trezorlib.btc
 def sign_tx(sig_percent, client, coin_name, inputs, outputs, details=None, prev_txes=None):
-    # set up a transactions dict
     txes = {None: trezor_proto.TransactionType(inputs=inputs, outputs=outputs)}
-    # preload all relevant transactions ahead of time
     for inp in inputs:
         if inp.script_type not in (
                 trezor_proto.InputScriptType.SPENDP2SHWITNESS,
@@ -379,13 +350,11 @@ def sign_tx(sig_percent, client, coin_name, inputs, outputs, details=None, prev_
 
     res = client.call(signtx)
 
-    # Prepare structure for signatures
     signatures = [None] * len(inputs)
     serialized_tx = b""
 
     def copy_tx_meta(tx):
         tx_copy = trezor_proto.TransactionType(**tx)
-        # clear fields
         tx_copy.inputs_cnt = len(tx.inputs)
         tx_copy.inputs = []
         tx_copy.outputs_cnt = len(tx.bin_outputs or tx.outputs)
@@ -397,10 +366,9 @@ def sign_tx(sig_percent, client, coin_name, inputs, outputs, details=None, prev_
 
     R = trezor_proto.RequestType
 
-    percent = 0  # Used for signaling progress. 1-10 for inputs/outputs, 10-100 for sigs.
+    percent = 0
     sig_percent.emit(percent)
     while isinstance(res, trezor_proto.TxRequest):
-        # If there's some part of signed transaction, let's add it
         if res.serialized:
             if res.serialized.serialized_tx:
                 serialized_tx += res.serialized.serialized_tx
@@ -409,16 +377,14 @@ def sign_tx(sig_percent, client, coin_name, inputs, outputs, details=None, prev_
                 idx = res.serialized.signature_index
                 sig = res.serialized.signature
                 if signatures[idx] is not None:
-                    raise ValueError("Signature for index %d already filled" % idx)
+                    raise ValueError(f"Signature for index {idx} already filled")
                 signatures[idx] = sig
-                # emit completion percent
                 percent = 10 + int(90 * (idx + 1) / len(signatures))
                 sig_percent.emit(percent)
 
         if res.request_type == R.TXFINISHED:
             break
 
-        # Device asked for one more information, let's process it.
         current_tx = txes[res.details.tx_hash]
 
         if res.request_type == R.TXMETA:
@@ -434,7 +400,6 @@ def sign_tx(sig_percent, client, coin_name, inputs, outputs, details=None, prev_
             res = client.call(trezor_proto.TxAck(tx=msg))
 
         elif res.request_type == R.TXOUTPUT:
-            # Update just one percent then display additional waiting message (emitting -1)
             if percent == 9:
                 percent += 1
                 sig_percent.emit(percent)
@@ -466,10 +431,9 @@ def sign_tx(sig_percent, client, coin_name, inputs, outputs, details=None, prev_
     return signatures, serialized_tx
 
 
-class TrezorUi(object):
+class TrezorUi:
     def __init__(self):
         self.prompt_shown = False
-        pass
 
     def get_pin(self, code=None) -> str:
         if code == PIN_CURRENT:
@@ -481,7 +445,7 @@ class TrezorUi(object):
         else:
             desc = "PIN"
 
-        pin = ask_for_pin_callback("Please enter {}".format(desc))
+        pin = ask_for_pin_callback(f"Please enter {desc}")
         if pin is None:
             raise exceptions.Cancelled
         return pin
@@ -500,7 +464,7 @@ class TrezorUi(object):
 
 
 def ask_for_pin_callback(msg, hide_numbers=True):
-    dlg = PinMatrix_dlg(title=msg, fHideBtns=hide_numbers)
+    dlg = PinMatrixDlg(title=msg, fHideBtns=hide_numbers)
     if dlg.exec_():
         return dlg.getPin()
     else:

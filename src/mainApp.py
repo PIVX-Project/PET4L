@@ -17,8 +17,8 @@ from database import Database
 from misc import printDbg, initLogs, saveCacheSettings, readCacheSettings, getVersion
 from mainWindow import MainWindow
 from constants import user_dir, SECONDS_IN_2_MONTHS
-from qt.dlg_configureRPCservers import ConfigureRPCservers_dlg
-from qt.dlg_signmessage import SignMessage_dlg
+from qt.dlg_configureRPCservers import ConfigureRPCserversDlg
+from qt.dlg_signmessage import SignMessageDlg
 
 
 class ServiceExit(Exception):
@@ -30,7 +30,7 @@ class ServiceExit(Exception):
 
 
 def service_shutdown(signum, frame):
-    print('Caught signal %d' % signum)
+    print(f'Caught signal {signum}')
     raise ServiceExit
 
 
@@ -54,7 +54,7 @@ class App(QMainWindow):
 
         # Get version and title
         self.version = getVersion()
-        self.title = 'PET4L - PIVX Emergency Tool For Ledger - v.%s-%s' % (self.version['number'], self.version['tag'])
+        self.title = f'PET4L - PIVX Emergency Tool For Ledger - v.{self.version["number"]}-{self.version["tag"]}'
 
         # Open database
         self.db = Database(self)
@@ -107,7 +107,7 @@ class App(QMainWindow):
         self.show()
         self.activateWindow()
 
-    def closeEvent(self, *args, **kwargs):
+    def closeEvent(self, event):
         # Terminate the running threads.
         # Set the shutdown flag on each thread to trigger a clean shutdown of each thread.
         self.mainWindow.myRpcWd.shutdown_flag.set()
@@ -133,16 +133,16 @@ class App(QMainWindow):
 
         # Adios
         print("Bye Bye.")
-        return QMainWindow.closeEvent(self, *args, **kwargs)
+        return super().closeEvent(event)
 
     def onEditRPCServer(self):
         # Create Dialog
-        ui = ConfigureRPCservers_dlg(self)
+        ui = ConfigureRPCserversDlg(self)
         if ui.exec():
             printDbg("Configuring RPC Servers...")
 
     def onSignVerifyMessage(self):
         # Create Dialog
-        ui = SignMessage_dlg(self.mainWindow)
+        ui = SignMessageDlg(self.mainWindow)
         if ui.exec():
             printDbg("Sign/Verify message...")

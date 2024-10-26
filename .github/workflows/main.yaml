@@ -17,7 +17,7 @@ jobs:
       - name: Initialize Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.10.6'
 
       - name: Install Dependencies
         run: |
@@ -26,9 +26,9 @@ jobs:
           pip install setuptools==53.0.0
           pip install -r requirements.txt
           pip install importlib-metadata==4.13.0
-          pip install flake8==3.8.4
-          pip install mypy==0.781
-          pip install vulture==2.3
+          pip install flake8==4.0.0
+          pip install mypy==0.920
+          pip install vulture==2.4
 
       - name: Lint
         run: |
@@ -66,7 +66,7 @@ jobs:
       - name: Setup Python 3.10
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.10.6'
       - name: Setup pip cache
         uses: actions/cache@v4
         with:

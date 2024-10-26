@@ -31,9 +31,10 @@ def process_api_exceptions(func):
 
 class ApiClient:
 
-    def __init__(self, isTestnet=False):
-        self.isTestnet = isTestnet
-        self.api = BlockBookClient(isTestnet)
+    def __init__(self, main_wnd):
+        self.main_wnd = main_wnd
+        self.isTestnet = main_wnd.isTestnetRPC
+        self.api = BlockBookClient(main_wnd, self.isTestnet)
 
     @process_api_exceptions
     def getAddressUtxos(self, address):

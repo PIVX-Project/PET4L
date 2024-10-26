@@ -4,17 +4,17 @@
 # Distributed under the MIT software license, see the accompanying
 # file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
 
-from PyQt5.QtWidgets import QDialog, QHBoxLayout, QVBoxLayout, QLabel, \
-    QListWidget, QFrame, QFormLayout, QComboBox, QLineEdit, QListWidgetItem, \
-    QWidget, QPushButton, QMessageBox
-
+from PyQt5.QtWidgets import (
+    QDialog, QHBoxLayout, QVBoxLayout, QLabel, QListWidget, QFrame, QFormLayout,
+    QComboBox, QLineEdit, QListWidgetItem, QWidget, QPushButton, QMessageBox
+)
 from misc import myPopUp, checkRPCstring
 from threads import ThreadFuns
 
 
-class ConfigureRPCservers_dlg(QDialog):
+class ConfigureRPCserversDlg(QDialog):
     def __init__(self, main_wnd):
-        QDialog.__init__(self, parent=main_wnd)
+        super().__init__(parent=main_wnd)
         self.main_wnd = main_wnd
         self.setWindowTitle('RPC Servers Configuration')
         self.changing_index = None
@@ -29,49 +29,48 @@ class ConfigureRPCservers_dlg(QDialog):
         self.ui.host_edt.clear()
 
     def initUI(self):
-        self.ui = Ui_ConfigureRPCserversDlg()
+        self.ui = UiConfigureRPCserversDlg()
         self.ui.setupUi(self)
 
     def insert_server_list(self, server):
-        id = server['id']
+        server_id = server['id']
         index = self.main_wnd.mainWindow.getServerListIndex(server)
         server_line = QWidget()
         server_row = QHBoxLayout()
-        server_text = "%s://%s" % (server['protocol'], server['host'])
-        if server['id'] == 0 and server['isCustom']:
-            # Local Wallet
-            server_text = server_text + "&nbsp;&nbsp;<b>Local Wallet</b>"
+        server_text = f"{server['protocol']}://{server['host']}"
+        if server_id == 0 and server['isCustom']:
+            server_text += "&nbsp;&nbsp;<b>Local Wallet</b>"
         elif not server['isCustom']:
-            server_text = "<em style='color: purple'>%s</em>" % server_text
+            server_text = f"<em style='color: purple'>{server_text}</em>"
         server_row.addWidget(QLabel(server_text))
         server_row.addStretch(1)
-        #  -- Edit button
-        editBtn = QPushButton()
-        editBtn.setIcon(self.main_wnd.mainWindow.editMN_icon)
-        editBtn.setToolTip("Edit server configuration")
+
+        edit_btn = QPushButton()
+        edit_btn.setIcon(self.main_wnd.mainWindow.editMN_icon)
+        edit_btn.setToolTip("Edit server configuration")
         if not server['isCustom']:
-            editBtn.setDisabled(True)
-            editBtn.setToolTip('Default servers are not editable')
-        editBtn.clicked.connect(lambda: self.onAddServer(index))
-        server_row.addWidget(editBtn)
-        #  -- Remove button
-        removeBtn = QPushButton()
-        removeBtn.setIcon(self.main_wnd.mainWindow.removeMN_icon)
-        removeBtn.setToolTip("Remove server configuration")
-        if id == 0:
-            removeBtn.setDisabled(True)
-            removeBtn.setToolTip('Cannot remove local wallet')
+            edit_btn.setDisabled(True)
+            edit_btn.setToolTip('Default servers are not editable')
+        edit_btn.clicked.connect(lambda: self.onAddServer(index))
+        server_row.addWidget(edit_btn)
+
+        remove_btn = QPushButton()
+        remove_btn.setIcon(self.main_wnd.mainWindow.removeMN_icon)
+        remove_btn.setToolTip("Remove server configuration")
+        if server_id == 0:
+            remove_btn.setDisabled(True)
+            remove_btn.setToolTip('Cannot remove local wallet')
         if not server['isCustom']:
-            removeBtn.setDisabled(True)
-            removeBtn.setToolTip('Cannot remove default servers')
-        removeBtn.clicked.connect(lambda: self.onRemoveServer(index))
-        server_row.addWidget(removeBtn)
-        #  --
+            remove_btn.setDisabled(True)
+            remove_btn.setToolTip('Cannot remove default servers')
+        remove_btn.clicked.connect(lambda: self.onRemoveServer(index))
+        server_row.addWidget(remove_btn)
+
         server_line.setLayout(server_row)
-        self.serverItems[id] = QListWidgetItem()
-        self.serverItems[id].setSizeHint(server_line.sizeHint())
-        self.ui.serversBox.addItem(self.serverItems[id])
-        self.ui.serversBox.setItemWidget(self.serverItems[id], server_line)
+        self.serverItems[server_id] = QListWidgetItem()
+        self.serverItems[server_id].setSizeHint(server_line.sizeHint())
+        self.ui.serversBox.addItem(self.serverItems[server_id])
+        self.ui.serversBox.setItemWidget(self.serverItems[server_id], server_line)
 
     def loadServers(self):
         # Clear serversBox
@@ -85,10 +84,7 @@ class ConfigureRPCservers_dlg(QDialog):
         server = self.main_wnd.mainWindow.rpcServersList[index]
         self.ui.user_edt.setText(server['user'])
         self.ui.passwd_edt.setText(server['password'])
-        if server['protocol'] == 'https':
-            self.ui.protocol_select.setCurrentIndex(1)
-        else:
-            self.ui.protocol_select.setCurrentIndex(0)
+        self.ui.protocol_select.setCurrentIndex(1 if server['protocol'] == 'https' else 0)
         self.ui.host_edt.setText(server['host'])
 
     def onAddServer(self, index=None):
@@ -122,13 +118,11 @@ class ConfigureRPCservers_dlg(QDialog):
         self.close()
 
     def onRemoveServer(self, index):
-        mess = "Are you sure you want to remove server with index %d (%s) from list?" % (
-            index, self.main_wnd.mainWindow.rpcServersList[index].get('host'))
+        mess = f"Are you sure you want to remove server with index {index} ({self.main_wnd.mainWindow.rpcServersList[index].get('host')}) from list?"
         ans = myPopUp(self, QMessageBox.Question, 'PET4L - remove server', mess)
         if ans == QMessageBox.Yes:
-            # Remove entry from database
-            id = self.main_wnd.mainWindow.rpcServersList[index].get('id')
-            self.main_wnd.db.removeRPCServer(id)
+            server_id = self.main_wnd.mainWindow.rpcServersList[index].get('id')
+            self.main_wnd.db.removeRPCServer(server_id)
 
     def onSave(self):
         # Get new config data
@@ -136,27 +130,24 @@ class ConfigureRPCservers_dlg(QDialog):
         host = self.ui.host_edt.text()
         user = self.ui.user_edt.text()
         passwd = self.ui.passwd_edt.text()
-        # Check malformed URL
-        url_string = "%s://%s:%s@%s" % (protocol, user, passwd, host)
+        url_string = f"{protocol}://{user}:{passwd}@{host}"
         if checkRPCstring(url_string):
             if self.changing_index is None:
                 # Save new entry in DB.
                 self.main_wnd.db.addRPCServer(protocol, host, user, passwd)
             else:
-                # Edit existing entry to DB.
-                id = self.main_wnd.mainWindow.rpcServersList[self.changing_index].get('id')
-                self.main_wnd.db.editRPCServer(protocol, host, user, passwd, id)
-                # If this was previously selected in mainWindow, update status
+                server_id = self.main_wnd.mainWindow.rpcServersList[self.changing_index].get('id')
+                self.main_wnd.db.editRPCServer(protocol, host, user, passwd, server_id)
                 clients = self.main_wnd.mainWindow.header.rpcClientsBox
                 data = clients.itemData(clients.currentIndex())
-                if data.get('id') == id and data.get('isCustom'):
-                    ThreadFuns.runInThread(self.main_wnd.mainWindow.updateRPCstatus, (True,), )
+                if data.get('id') == server_id and data.get('isCustom'):
+                    ThreadFuns.runInThread(self.main_wnd.mainWindow.updateRPCstatus, (True,))
 
             # call onCancel
             self.onCancel()
 
 
-class Ui_ConfigureRPCserversDlg(object):
+class UiConfigureRPCserversDlg:
     def setupUi(self, ConfigureRPCserversDlg):
         ConfigureRPCserversDlg.setModal(True)
         #  -- Layout

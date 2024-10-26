@@ -7,7 +7,7 @@
 import os
 from queue import Queue
 
-wqueue = Queue()  # type: Queue[str]
+wqueue: Queue[str] = Queue()
 
 APPDATA_DIRNAME = ".PET4L-DATA"
 
@@ -21,7 +21,7 @@ TESTNET_WIF_PREFIX = 239
 TESTNET_MAGIC_BYTE = 139
 TESTNET_STAKE_MAGIC_BYTE = 73
 DEFAULT_PROTOCOL_VERSION = 70915
-MINIMUM_FEE = 0.0001    # minimum PIV/kB
+MINIMUM_FEE = 0.0001  # minimum PIV/kB
 SECONDS_IN_2_MONTHS = 60 * 24 * 60 * 60
 MAX_INPUTS_NO_WARNING = 75
 starting_width = 1033
@@ -50,8 +50,8 @@ DefaultCache = {
 trusted_RPC_Servers = [
     ["https", "lithuania.fuzzbawls.pw:8080", "spmtUser", "WUss6sr8956S5Paex254"],
     ["https", "latvia.fuzzbawls.pw:8080", "spmtUser", "8X88u7TuefPm7mQaJY52"],
-    ["https", "charlotte.fuzzbawls.pw:8080", "spmtUser", "ZyD936tm9dvqmMP8A777"]]
-
+    ["https", "charlotte.fuzzbawls.pw:8080", "spmtUser", "ZyD936tm9dvqmMP8A777"]
+]
 
 HW_devices = [
     # (model name, api index)
