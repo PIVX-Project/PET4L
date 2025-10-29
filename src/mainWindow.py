@@ -406,18 +406,14 @@ class MainWindow(QWidget):
 
         try:
             rpcClient = RpcClient(rpc_protocol, rpc_host, rpc_user, rpc_password)
-            status, statusMess, lastBlock, r_time1, isTestnet = rpcClient.getStatus()
-            isBlockchainSynced, r_time2 = rpcClient.isBlockchainSynced()
+            status, statusMess, lastBlock, isTestnet = rpcClient.getStatus()
+            isBlockchainSynced = rpcClient.isBlockchainSynced()
         except Exception as e:
             printException(getCallerName(), getFunctionName(), "exception updating RPC status:", str(e))
             # clear status
             self.rpcClient = None
             self.sig_clearRPCstatus.emit()
             return
-
-        rpcResponseTime = None
-        if r_time1 is not None and r_time2 != 0:
-            rpcResponseTime = round((r_time1 + r_time2) / 2, 3)
 
         # Do not update status if the user has selected a different server since the start of updateRPCStatus()
         if rpc_index != self.header.rpcClientsBox.currentIndex():
@@ -429,7 +425,6 @@ class MainWindow(QWidget):
             self.rpcLastBlock = lastBlock
             self.rpcStatusMess = statusMess
             self.isBlockchainSynced = isBlockchainSynced
-            self.rpcResponseTime = rpcResponseTime
             # if testnet flag is changed, update api client and persist setting
             if isTestnet != self.isTestnetRPC:
                 self.isTestnetRPC = isTestnet

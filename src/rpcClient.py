@@ -11,7 +11,7 @@ import ssl
 import threading
 
 from constants import DEFAULT_PROTOCOL_VERSION, MINIMUM_FEE
-from misc import getCallerName, getFunctionName, printException, printDbg, now, timeThis
+from misc import getCallerName, getFunctionName, printException, printDbg, now
 
 
 def process_RPC_exceptions(func):
@@ -190,10 +190,10 @@ class RpcClient:
         statusMess = "Unable to connect to a PIVX RPC server.\n"
         statusMess += "Either the local PIVX wallet is not open, or the remote RPC server is not responding."
         n = 0
-        response_time = None
+        response_time = None  # keep placeholder to preserve return 5-tuple
         with self.lock:
             isTestnet = self.conn.getinfo()['testnet']
-            n, response_time = timeThis(self.conn.getblockcount)
+            n = self.conn.getblockcount()
             if n is None:
                 n = 0
 
@@ -201,14 +201,15 @@ class RpcClient:
             status = True
             statusMess = "Connected to PIVX Blockchain"
 
+        # Preserve 5-tuple (status, msg, height, response_time, isTestnet)
         return status, statusMess, n, response_time, isTestnet
 
     @process_RPC_exceptions
     def isBlockchainSynced(self):
         res = False
-        response_time = None
+        response_time = None  # keep placeholder to preserve return 5-tuple
         with self.lock:
-            status, response_time = timeThis(self.conn.mnsync, 'status')
+            status = self.conn.mnsync, 'status'
             if status is not None:
                 res = status.get("IsBlockchainSynced")
 
