@@ -41,7 +41,6 @@ class MainWindow(QWidget):
     # signal: UTXO list loading percent (emitted by load_utxos_thread in tabRewards)
     sig_UTXOsLoading = pyqtSignal(int)
 
-
     def __init__(self, parent, imgDir):
         super(QWidget, self).__init__(parent)
         self.parent = parent
@@ -145,13 +144,8 @@ class MainWindow(QWidget):
     def clearRPCstatus(self):
         with self.lock:
             self.rpcConnected = False
-            self.header.lastPingBox.setHidden(False)
             self.header.rpcLed.setPixmap(self.ledGrayH_icon)
             self.header.lastBlockLabel.setText("<em>Connecting...</em>")
-            self.header.lastPingIcon.setPixmap(self.connRed_icon)
-            self.header.responseTimeLabel.setText("--")
-            self.header.responseTimeLabel.setStyleSheet("color: red")
-            self.header.lastPingIcon.setStyleSheet("color: red")
 
     def connButtons(self):
         self.header.button_checkRpc.clicked.connect(lambda: self.onCheckRpc())
@@ -355,25 +349,6 @@ class MainWindow(QWidget):
 
         self.header.lastBlockLabel.setText(text)
 
-    def updateLastBlockPing(self):
-        if not self.rpcConnected:
-            self.header.lastPingBox.setHidden(True)
-        else:
-            self.header.lastPingBox.setHidden(False)
-            if self.rpcResponseTime > 2:
-                color = "red"
-                self.header.lastPingIcon.setPixmap(self.connRed_icon)
-            elif self.rpcResponseTime > 1:
-                color = "orange"
-                self.header.lastPingIcon.setPixmap(self.connOrange_icon)
-            else:
-                color = "green"
-                self.header.lastPingIcon.setPixmap(self.connGreen_icon)
-            if self.rpcResponseTime is not None:
-                self.header.responseTimeLabel.setText("%.3f" % self.rpcResponseTime)
-                self.header.responseTimeLabel.setStyleSheet("color: %s" % color)
-                self.header.lastPingIcon.setStyleSheet("color: %s" % color)
-
     def updateRPCled(self, fDebug=False):
         if self.rpcConnected:
             self.header.rpcLed.setPixmap(self.ledPurpleH_icon)
@@ -391,7 +366,6 @@ class MainWindow(QWidget):
 
         self.header.rpcLed.setToolTip(self.rpcStatusMess)
         self.updateLastBlockLabel()
-        self.updateLastBlockPing()
 
     def updateRPClist(self):
         # Clear old stuff
