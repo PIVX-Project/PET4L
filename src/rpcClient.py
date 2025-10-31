@@ -190,7 +190,6 @@ class RpcClient:
         statusMess = "Unable to connect to a PIVX RPC server.\n"
         statusMess += "Either the local PIVX wallet is not open, or the remote RPC server is not responding."
         n = 0
-        response_time = None  # keep placeholder to preserve return 5-tuple
         with self.lock:
             isTestnet = self.conn.getinfo()['testnet']
             n = self.conn.getblockcount()
@@ -201,19 +200,17 @@ class RpcClient:
             status = True
             statusMess = "Connected to PIVX Blockchain"
 
-        # Preserve 5-tuple (status, msg, height, response_time, isTestnet)
-        return status, statusMess, n, response_time, isTestnet
+        return status, statusMess, n, isTestnet
 
     @process_RPC_exceptions
     def isBlockchainSynced(self):
         res = False
-        response_time = None  # keep placeholder to preserve return 5-tuple
         with self.lock:
-            status = self.conn.mnsync, 'status'
+            status = self.conn.mnsync('status')
             if status is not None:
                 res = status.get("IsBlockchainSynced")
+        return res
 
-        return res, response_time
 
     @process_RPC_exceptions
     def mnBudgetRawVote(self, mn_tx_hash, mn_tx_index, proposal_hash, vote, time, vote_sig):
