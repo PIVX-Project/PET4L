@@ -41,7 +41,6 @@ class MainWindow(QWidget):
     # signal: UTXO list loading percent (emitted by load_utxos_thread in tabRewards)
     sig_UTXOsLoading = pyqtSignal(int)
 
-
     def __init__(self, parent, imgDir):
         super(QWidget, self).__init__(parent)
         self.parent = parent
@@ -145,13 +144,8 @@ class MainWindow(QWidget):
     def clearRPCstatus(self):
         with self.lock:
             self.rpcConnected = False
-            self.header.lastPingBox.setHidden(False)
             self.header.rpcLed.setPixmap(self.ledGrayH_icon)
             self.header.lastBlockLabel.setText("<em>Connecting...</em>")
-            self.header.lastPingIcon.setPixmap(self.connRed_icon)
-            self.header.responseTimeLabel.setText("--")
-            self.header.responseTimeLabel.setStyleSheet("color: red")
-            self.header.lastPingIcon.setStyleSheet("color: red")
 
     def connButtons(self):
         self.header.button_checkRpc.clicked.connect(lambda: self.onCheckRpc())
@@ -355,25 +349,6 @@ class MainWindow(QWidget):
 
         self.header.lastBlockLabel.setText(text)
 
-    def updateLastBlockPing(self):
-        if not self.rpcConnected:
-            self.header.lastPingBox.setHidden(True)
-        else:
-            self.header.lastPingBox.setHidden(False)
-            if self.rpcResponseTime > 2:
-                color = "red"
-                self.header.lastPingIcon.setPixmap(self.connRed_icon)
-            elif self.rpcResponseTime > 1:
-                color = "orange"
-                self.header.lastPingIcon.setPixmap(self.connOrange_icon)
-            else:
-                color = "green"
-                self.header.lastPingIcon.setPixmap(self.connGreen_icon)
-            if self.rpcResponseTime is not None:
-                self.header.responseTimeLabel.setText("%.3f" % self.rpcResponseTime)
-                self.header.responseTimeLabel.setStyleSheet("color: %s" % color)
-                self.header.lastPingIcon.setStyleSheet("color: %s" % color)
-
     def updateRPCled(self, fDebug=False):
         if self.rpcConnected:
             self.header.rpcLed.setPixmap(self.ledPurpleH_icon)
@@ -391,7 +366,6 @@ class MainWindow(QWidget):
 
         self.header.rpcLed.setToolTip(self.rpcStatusMess)
         self.updateLastBlockLabel()
-        self.updateLastBlockPing()
 
     def updateRPClist(self):
         # Clear old stuff
@@ -432,18 +406,14 @@ class MainWindow(QWidget):
 
         try:
             rpcClient = RpcClient(rpc_protocol, rpc_host, rpc_user, rpc_password)
-            status, statusMess, lastBlock, r_time1, isTestnet = rpcClient.getStatus()
-            isBlockchainSynced, r_time2 = rpcClient.isBlockchainSynced()
+            status, statusMess, lastBlock, isTestnet = rpcClient.getStatus()
+            isBlockchainSynced = rpcClient.isBlockchainSynced()
         except Exception as e:
             printException(getCallerName(), getFunctionName(), "exception updating RPC status:", str(e))
             # clear status
             self.rpcClient = None
             self.sig_clearRPCstatus.emit()
             return
-
-        rpcResponseTime = None
-        if r_time1 is not None and r_time2 != 0:
-            rpcResponseTime = round((r_time1 + r_time2) / 2, 3)
 
         # Do not update status if the user has selected a different server since the start of updateRPCStatus()
         if rpc_index != self.header.rpcClientsBox.currentIndex():
@@ -455,7 +425,6 @@ class MainWindow(QWidget):
             self.rpcLastBlock = lastBlock
             self.rpcStatusMess = statusMess
             self.isBlockchainSynced = isBlockchainSynced
-            self.rpcResponseTime = rpcResponseTime
             # if testnet flag is changed, update api client and persist setting
             if isTestnet != self.isTestnetRPC:
                 self.isTestnetRPC = isTestnet
