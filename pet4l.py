@@ -33,18 +33,16 @@ if __name__ == '__main__':
     from PyQt5.QtWidgets import QApplication
     from mainApp import App
 
-    # Create App
+    # Create QApplication
     app = QApplication(sys.argv)
-
-    # --------------
 
     # Create QMainWindow Widget
     ex = App(imgDir, app, args)
 
-    # -- Launch RPC watchdog
+    # Launch RPC watchdog
     ex.mainWindow.rpc_watchdogThread.start()
 
-    # Execute App
+    # Execute the application
     app.exec_()
     try:
         app.deleteLater()
@@ -52,5 +50,3 @@ if __name__ == '__main__':
         print(e)
 
     sys.exit()
-
-

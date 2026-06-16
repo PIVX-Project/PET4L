@@ -7,7 +7,7 @@
 from blockbookClient import BlockBookClient
 from cryptoIDClient import CryptoIDClient
 
-from misc import getCallerName, getFunctionName, printException, printError
+from misc import getCallerName, getFunctionName, printException, printError, printDbg
 
 
 def process_api_exceptions(func):
@@ -31,9 +31,15 @@ def process_api_exceptions(func):
 
 class ApiClient:
 
-    def __init__(self, isTestnet=False):
-        self.isTestnet = isTestnet
-        self.api = BlockBookClient(isTestnet)
+    def __init__(self, main_wnd):
+        self.main_wnd = main_wnd
+        self.isTestnet = main_wnd.isTestnetRPC
+        self.api = BlockBookClient(main_wnd, self.isTestnet)
+
+    def updateExplorerUrl(self, new_url):
+        # Update the explorer URL in the BlockBookClient instance
+        printDbg(f"Updating explorer URL to: {new_url}")
+        self.api.updateBaseUrl(new_url)
 
     @process_api_exceptions
     def getAddressUtxos(self, address):

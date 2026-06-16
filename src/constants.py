@@ -31,6 +31,11 @@ user_dir = os.path.join(home_dir, APPDATA_DIRNAME)
 log_File = os.path.join(user_dir, 'debug.log')
 database_File = os.path.join(user_dir, 'application.db')
 
+# Default explorers (url). zkbitcoin acts as a mainnet fallback if the primary
+# explorer fails. Defined here so DefaultCache can reference them.
+DEFAULT_MAINNET_EXPLORER = "https://explorer.duddino.com/"
+DEFAULT_TESTNET_EXPLORER = "https://testnet.duddino.com/"
+
 DefaultCache = {
     "lastAddress": "",
     "window_width": starting_width,
@@ -38,6 +43,10 @@ DefaultCache = {
     "splitter_x": 342,
     "splitter_y": 133,
     "console_hidden": False,
+    # Selected explorer is stored per network, keyed by URL (stable across
+    # reordering), so switching networks never remaps to a different server.
+    "selectedExplorer_mainnet": DEFAULT_MAINNET_EXPLORER,
+    "selectedExplorer_testnet": DEFAULT_TESTNET_EXPLORER,
     "selectedHW_index": 0,
     "selectedRPC_index": 0,
     "isTestnetRPC": False,
@@ -52,6 +61,12 @@ trusted_RPC_Servers = [
     ["https", "latvia.fuzzbawls.pw:8080", "spmtUser", "8X88u7TuefPm7mQaJY52"],
     ["https", "charlotte.fuzzbawls.pw:8080", "spmtUser", "ZyD936tm9dvqmMP8A777"]]
 
+# Default explorer rows (url, isTestnet, isCustom).
+trusted_explorers = [
+    [DEFAULT_MAINNET_EXPLORER, False, False],
+    [DEFAULT_TESTNET_EXPLORER, True, False],
+    ["https://zkbitcoin.com/", False, False]
+]
 
 HW_devices = [
     # (model name, api index)

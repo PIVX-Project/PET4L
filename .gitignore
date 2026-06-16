@@ -4,7 +4,7 @@
 /.pytest_cache/
 /.idea/
 /.settings/
-/__pycache__/
+__pycache__/
 
 # Virtual environments
 /venv*/
