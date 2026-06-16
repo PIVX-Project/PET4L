@@ -5,6 +5,7 @@
 # file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
 
 from PyQt5.QtWidgets import QPushButton, QLabel, QGridLayout, QHBoxLayout, QComboBox, QWidget
+from PyQt5.QtCore import Qt
 
 from constants import HW_devices
 from PyQt5.Qt import QSizePolicy
@@ -70,4 +71,15 @@ class GuiHeader(QWidget):
         self.centralBox.addWidget(self.hwLed, 1, 3)
         layout.addLayout(self.centralBox)
         layout.addStretch(1)
+        # Explorer Clients Box
+        label4 = QLabel("Explorer")
+        self.centralBox.addWidget(label4, 2, 0)
+        self.explorerClientsBox = QComboBox()
+        self.explorerClientsBox.setToolTip("Select Explorer Server")
+        self.centralBox.addWidget(self.explorerClientsBox, 2, 1)
+        # (currentIndexChanged is connected in MainWindow.connButtons)
+        # Active Explorer Label
+        self.activeExplorerLabel = QLabel("Active Explorer: <b>None</b>")
+        self.activeExplorerLabel.setTextFormat(Qt.RichText)
+        layout.addWidget(self.activeExplorerLabel)
         self.setLayout(layout)

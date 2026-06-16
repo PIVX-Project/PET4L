@@ -16,7 +16,8 @@ from PyQt5.QtWidgets import QWidget, QPushButton, QHBoxLayout, QGroupBox, QVBoxL
     QFileDialog, QTextEdit, QTabWidget, QLabel, QSplitter
 
 from apiClient import ApiClient
-from constants import starting_height, DefaultCache, wqueue
+from constants import starting_height, DefaultCache, wqueue, \
+    DEFAULT_MAINNET_EXPLORER, DEFAULT_TESTNET_EXPLORER
 from hwdevice import HWdevice
 from misc import printDbg, printException, printOK, getCallerName, getFunctionName, \
     WriteStreamReceiver, now, persistCacheSetting, myPopUp_sb, getRemotePET4Lversion
@@ -41,7 +42,6 @@ class MainWindow(QWidget):
     # signal: UTXO list loading percent (emitted by load_utxos_thread in tabRewards)
     sig_UTXOsLoading = pyqtSignal(int)
 
-
     def __init__(self, parent, imgDir):
         super(QWidget, self).__init__(parent)
         self.parent = parent
@@ -56,6 +56,7 @@ class MainWindow(QWidget):
         self.rpcClient = None
         self.rpcConnected = False
         self.updatingRPCbox = False
+        self.updatingExplorerbox = False
         self.rpcStatusMess = "Not Connected"
         self.isBlockchainSynced = False
         # Changes when an RPC client is connected (affecting API client)
@@ -71,6 +72,9 @@ class MainWindow(QWidget):
 
         # -- Load RPC Servers list (init selection and self.isTestnet)
         self.updateRPClist()
+        # -- Load Explorer Servers list
+        self.explorerServersList = []
+        self.updateExplorerList()
 
         # -- Init HW selection
         self.header.hwDevices.setCurrentIndex(self.parent.cache['selectedHW_index'])
@@ -79,7 +83,7 @@ class MainWindow(QWidget):
         self.hwdevice = HWdevice(self)
 
         # -- init Api Client
-        self.apiClient = ApiClient(self.isTestnetRPC)
+        self.apiClient = ApiClient(self)
 
         # -- Create Queue to redirect stdout
         self.queue = wqueue
@@ -158,10 +162,12 @@ class MainWindow(QWidget):
         self.header.button_checkHw.clicked.connect(lambda: self.onCheckHw())
         self.header.rpcClientsBox.currentIndexChanged.connect(self.onChangeSelectedRPC)
         self.header.hwDevices.currentIndexChanged.connect(self.onChangeSelectedHW)
+        self.header.explorerClientsBox.currentIndexChanged.connect(self.onChangeSelectedExplorer)
         # -- Connect signals
         self.sig_clearRPCstatus.connect(self.clearRPCstatus)
         self.sig_RPCstatusUpdated.connect(self.showRPCstatus)
         self.parent.sig_changed_rpcServers.connect(self.updateRPClist)
+        self.parent.sig_ExplorerListReloaded.connect(self.updateExplorerList)
 
     def getRPCserver(self):
         itemData = self.header.rpcClientsBox.itemData(self.header.rpcClientsBox.currentIndex())
@@ -425,6 +431,105 @@ class MainWindow(QWidget):
         # reload servers in configure dialog
         self.sig_RPClistReloaded.emit()
 
+    def explorerCacheKey(self):
+        # Selection is remembered per network so switching networks never
+        # remaps to an unrelated explorer.
+        return 'selectedExplorer_testnet' if self.isTestnetRPC else 'selectedExplorer_mainnet'
+
+    def explorerSettingsKey(self):
+        return 'cache_ExplorerTestnet' if self.isTestnetRPC else 'cache_ExplorerMainnet'
+
+    def setSelectedExplorer(self, url):
+        # Persist the selected explorer URL for the active network.
+        self.parent.cache[self.explorerCacheKey()] = persistCacheSetting(self.explorerSettingsKey(), url)
+
+    def updateExplorerList(self):
+        # Full list (both networks) backs the configuration dialog...
+        self.explorerServersList = self.parent.db.getExplorerServers()
+        # ...while the header dropdown only offers explorers for the active
+        # network, so a testnet explorer isn't a selectable no-op on mainnet.
+        network_explorers = [e for e in self.explorerServersList
+                             if bool(e['isTestnet']) == self.isTestnetRPC]
+
+        # Repopulate the explorer box. Guard so that the programmatic
+        # clear()/addItem() calls don't fire onChangeSelectedExplorer.
+        self.updatingExplorerbox = True
+        self.header.explorerClientsBox.clear()
+        for explorer in network_explorers:
+            self.header.explorerClientsBox.addItem(explorer["url"], explorer)
+
+        # Restore the selection saved for THIS network, matched by URL (the
+        # combo's item text). Indices are per-network here, so a saved URL is
+        # the only stable handle across networks and reordering.
+        saved_url = self.parent.cache.get(self.explorerCacheKey())
+        index = self.header.explorerClientsBox.findText(saved_url) if saved_url else -1
+        if index < 0:
+            index = 0  # saved explorer no longer available -> first for network
+        self.header.explorerClientsBox.setCurrentIndex(index)
+        self.updatingExplorerbox = False
+
+        # Persist whatever ended up selected so the cache reflects reality, then
+        # sync the api client. We do this explicitly because the guard above
+        # swallowed the currentIndexChanged signal.
+        selected_explorer = self.header.explorerClientsBox.currentData()
+        if selected_explorer:
+            self.setSelectedExplorer(selected_explorer['url'])
+        self.applySelectedExplorer()
+
+    def applySelectedExplorer(self):
+        selected_explorer = self.header.explorerClientsBox.currentData()
+        if selected_explorer:
+            url = selected_explorer['url']
+            self.header.activeExplorerLabel.setText("Active Explorer: <b>%s</b>" % url)
+        else:
+            # No explorer configured for this network: fall back to the default.
+            network = 'testnet' if self.isTestnetRPC else 'mainnet'
+            url = self.getExplorerURL(network)
+            self.header.activeExplorerLabel.setText("Active Explorer: <b>None</b>")
+        printDbg("Active Explorer URL: %s" % url)
+        if getattr(self, 'apiClient', None) is not None:
+            self.apiClient.updateExplorerUrl(url)
+
+    def onChangeSelectedExplorer(self, i):
+        # Don't react while we are programmatically repopulating the box
+        if self.updatingExplorerbox:
+            return
+
+        selected_explorer = self.header.explorerClientsBox.itemData(i)
+        if selected_explorer:
+            explorer_url = selected_explorer.get('url', '')
+            # Persist the new selection for the active network
+            self.setSelectedExplorer(explorer_url)
+            # Point the api client at the newly selected explorer
+            if getattr(self, 'apiClient', None) is not None:
+                self.apiClient.updateExplorerUrl(explorer_url)
+            printDbg("Explorer changed to: %s" % explorer_url)
+            self.header.activeExplorerLabel.setText("Active Explorer: <b>%s</b>" % explorer_url)
+        else:
+            printDbg("No explorer selected")
+            self.header.activeExplorerLabel.setText("Active Explorer: <b>None</b>")
+
+    def getExplorerURLList(self, network):
+        # All configured explorer URLs for the given network, defaults if none.
+        isTestnet = (network == 'testnet')
+        urls = [e['url'] for e in self.explorerServersList if bool(e['isTestnet']) == isTestnet]
+        if not urls:
+            printDbg("No explorers configured for %s, using default." % network)
+            urls = [DEFAULT_TESTNET_EXPLORER if isTestnet else DEFAULT_MAINNET_EXPLORER]
+        return urls
+
+    def getExplorerURL(self, network):
+        # Honour the persisted per-network selection, falling back to the first
+        # explorer for that network. Reads only cache/list state (no Qt widget),
+        # so it is safe to call from the RPC worker thread when ApiClient is
+        # rebuilt on a network switch.
+        cache_key = 'selectedExplorer_testnet' if network == 'testnet' else 'selectedExplorer_mainnet'
+        saved_url = self.parent.cache.get(cache_key)
+        urls = self.getExplorerURLList(network)
+        if saved_url and saved_url in urls:
+            return saved_url
+        return urls[0]
+
     def updateRPCstatus(self, ctrl, fDebug=False):
         rpc_index, rpc_protocol, rpc_host, rpc_user, rpc_password = self.getRPCserver()
         if fDebug:
@@ -449,6 +554,7 @@ class MainWindow(QWidget):
         if rpc_index != self.header.rpcClientsBox.currentIndex():
             return
 
+        networkChanged = False
         with self.lock:
             self.rpcClient = rpcClient
             self.rpcConnected = status
@@ -460,5 +566,10 @@ class MainWindow(QWidget):
             if isTestnet != self.isTestnetRPC:
                 self.isTestnetRPC = isTestnet
                 self.parent.cache['isTestnetRPC'] = persistCacheSetting('isTestnetRPC', isTestnet)
-                self.apiClient = ApiClient(isTestnet)
+                self.apiClient = ApiClient(self)
+                networkChanged = True
         self.sig_RPCstatusUpdated.emit(rpc_index, fDebug)
+        # We are on a worker thread here: refresh the explorer dropdown for the
+        # new network via the (queued) signal so it runs on the GUI thread.
+        if networkChanged:
+            self.parent.sig_ExplorerListReloaded.emit()
