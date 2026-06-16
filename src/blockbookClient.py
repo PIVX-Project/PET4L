@@ -5,8 +5,7 @@
 # file LICENSE.txt or http://www.opensource.org/licenses/mit-license.php.
 
 import requests
-
-from misc import getCallerName, getFunctionName, printException
+from misc import getCallerName, getFunctionName, printException, printDbg
 
 
 def process_blockbook_exceptions(func):
@@ -15,33 +14,53 @@ def process_blockbook_exceptions(func):
         try:
             return func(*args, **kwargs)
         except Exception as e:
-            if client.isTestnet:
-                new_url = "https://testnet.fuzzbawls.pw"
-            else:
-                new_url = "https://zkbitcoin.com/"
-            message = "BlockBook Client exception on %s\nTrying backup server %s" % (client.url, new_url)
+            message = "BlockBook Client exception on %s" % client.url
             printException(getCallerName(True), getFunctionName(True), message, str(e))
-            try:
-                client.url = new_url
-                return func(*args, **kwargs)
-
-            except Exception:
-                raise
+            # Primary explorer failed: retry against the other explorers
+            # configured for this network (e.g. zkbitcoin) before giving up.
+            for new_url in client.getFallbackUrls():
+                printDbg("Trying backup explorer %s" % new_url)
+                try:
+                    client.url = new_url
+                    return func(*args, **kwargs)
+                except Exception:
+                    continue
+            # All explorers failed: re-raise so ApiClient can fall back further.
+            raise
 
     return process_blockbook_exceptions_int
 
 
 class BlockBookClient:
-
-    def __init__(self, isTestnet=False):
+    def __init__(self, main_wnd, isTestnet=False):
+        self.main_wnd = main_wnd
         self.isTestnet = isTestnet
-        if isTestnet:
-            self.url = "https://testnet.rockdev.org/"
-        else:
-            self.url = "https://explorer.rockdev.org/"
+        self.url = ""
+        self.loadURL()
+
+    def network(self):
+        return 'testnet' if self.isTestnet else 'mainnet'
+
+    def loadURL(self):
+        self.url = self.main_wnd.getExplorerURL(self.network())
+        printDbg(f"Using Explorer URL: {self.url}")
+
+    def getFallbackUrls(self):
+        # Return the other explorer URLs for this network (current one excluded).
+        try:
+            urls = self.main_wnd.getExplorerURLList(self.network())
+        except Exception:
+            return []
+        return [u for u in urls if u != self.url]
+
+    def updateBaseUrl(self, new_url):
+        # Update the explorer URL
+        self.url = new_url
+        printDbg(f"Explorer URL updated to: {self.url}")
 
     def checkResponse(self, method, param=""):
-        url = self.url + "/api/%s" % method
+        # rstrip avoids a double slash when the URL already ends with '/'
+        url = self.url.rstrip('/') + "/api/%s" % method
         if param != "":
             url += "/%s" % param
         resp = requests.get(url, data={}, verify=True)
@@ -53,7 +72,6 @@ class BlockBookClient:
     @process_blockbook_exceptions
     def getAddressUtxos(self, address):
         utxos = self.checkResponse("utxo", address)
-        # Add script for cryptoID legacy
         for u in utxos:
             u["script"] = ""
         return utxos
