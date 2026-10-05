@@ -29,10 +29,10 @@ def process_ledger_exceptions(func):
         except BTChipException as e:
             printDbg('Error while communicating with Ledger hardware wallet.')
             e.message = 'Error while communicating with Ledger hardware wallet.'
-            if (e.sw in (0x6f01, 0x6d00, 0x6700, 0x6faa)):
+            if e.sw in (0x6f01, 0x6d00, 0x6700, 0x6faa):
                 e.message = 'Make sure the PIVX app is open on your Ledger device.'
                 e.message += '<br>If there is a program (such as Ledger Bitcoin Wallet) interfering with the USB communication, close it first.'
-            elif (e.sw == 0x6982):
+            elif e.sw == 0x6982:
                 e.message = 'Enter the PIN on your Ledger device.'
             printException(getCallerName(True), getFunctionName(True), e.message, e.args)
             raise DisconnectedException(e.message, hwDevice)
@@ -63,7 +63,7 @@ class LedgerApi(QObject):
     sigTxdone = pyqtSignal(bytearray, str)
     # signal: sigtx (thread) is done (aborted) - emitted by signTxFinish
     sigTxabort = pyqtSignal()
-    # signal: tx_progress percent - emitted by perepare_transfer_tx_bulk
+    # signal: tx_progress percent - emitted by prepare_transfer_tx_bulk
     tx_progress = pyqtSignal(int)
     # signal: sig_progress percent - emitted by signTxSign
     sig_progress = pyqtSignal(int)
@@ -71,8 +71,8 @@ class LedgerApi(QObject):
     sig_disconnected = pyqtSignal(str)
 
     def __init__(self, main_wnd, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.main_wnd = main_wnd
-        QObject.__init__(self, *args, **kwargs)
         self.model = [x[0] for x in HW_devices].index("LEDGER Nano")
         self.messages = [
             'Device not initialized.',
@@ -96,9 +96,9 @@ class LedgerApi(QObject):
             printDbg("Ledger Initialized")
             self.status = 1
             ver = self.chip.getFirmwareVersion()
-            printOK("Ledger HW device connected [v. %s]" % str(ver.get('version')))
+            printOK(f"Ledger HW device connected [v. {ver.get('version')}]")
             # Check device is unlocked
-            bip32_path = MPATH + "%d'/0/%d" % (0, 0)
+            bip32_path = f"{MPATH}{0}'/0/{0}"
             _ = self.chip.getWalletPublicKey(bip32_path)
             self.status = 2
         self.sig_progress.connect(self.updateSigProgress)
@@ -125,8 +125,7 @@ class LedgerApi(QObject):
 
         utxo_tx_index = utxo['vout']
         if utxo_tx_index < 0 or utxo_tx_index > len(prev_transaction.outputs):
-            raise Exception('Incorrect value of outputIndex for UTXO %s-%d' %
-                            (utxo['txid'], utxo['vout']))
+            raise Exception(f'Incorrect value of outputIndex for UTXO {utxo["txid"]}-{utxo["vout"]}')
 
         trusted_input = self.chip.getTrustedInput(prev_transaction, utxo_tx_index)
         self.trusted_inputs.append(trusted_input)
@@ -136,10 +135,10 @@ class LedgerApi(QObject):
         pubkey_hash = bin_hash160(curr_pubkey)
         pubkey_hash_from_script = extract_pkh_from_locking_script(prev_transaction.outputs[utxo_tx_index].script)
         if pubkey_hash != pubkey_hash_from_script:
-            text = "Error: The hashes for the public key for the BIP32 path (%s), and the UTXO locking script do not match." % bip32_path
+            text = f"Error: The hashes for the public key for the BIP32 path ({bip32_path}), and the UTXO locking script do not match."
             text += "Your signed transaction will not be validated by the network.\n"
-            text += "pubkey_hash: %s\n" % pubkey_hash.hex()
-            text += "pubkey_hash_from_script: %s\n" % pubkey_hash_from_script.hex()
+            text += f"pubkey_hash: {pubkey_hash.hex()}\n"
+            text += f"pubkey_hash_from_script: {pubkey_hash_from_script.hex()}\n"
             printDbg(text)
 
         self.arg_inputs.append({
@@ -156,18 +155,15 @@ class LedgerApi(QObject):
         with self.lock:
             # For each UTXO create a Ledger 'trusted input'
             self.trusted_inputs = []
-            #    https://klmoney.wordpress.com/bitcoin-dissecting-transactions-part-2-building-a-transaction-by-hand)
+            #    https://klmoney.wordpress.com/bitcoin-dissecting-transactions-part-2-building-a-transaction-by-hand
             self.arg_inputs = []
             self.amount = 0
-            num_of_sigs = sum([len(mnode['utxos']) for mnode in rewardsArray])
+            num_of_sigs = sum(len(mnode['utxos']) for mnode in rewardsArray)
             curr_utxo_checked = 0
 
             for mnode in rewardsArray:
                 # Add proper HW path (for current device) on each utxo
-                if isTestnet:
-                    mnode['path'] = MPATH_TESTNET + mnode['path']
-                else:
-                    mnode['path'] = MPATH + mnode['path']
+                mnode['path'] = (MPATH_TESTNET if isTestnet else MPATH) + mnode['path']
 
                 # Create a TX input with each utxo
                 for utxo in mnode['utxos']:
@@ -198,10 +194,10 @@ class LedgerApi(QObject):
 
             self.mBox2 = QMessageBox(caller)
             self.messageText = "<p>Confirm transaction on your device, with the following details:</p>"
-            # messageText += "From bip32_path: <b>%s</b><br><br>" % str(bip32_path)
-            self.messageText += "<p>Payment to:<br><b>%s</b></p>" % dest_address
-            self.messageText += "<p>Net amount:<br><b>%s</b> PIV</p>" % str(round(self.amount / 1e8, 8))
-            self.messageText += "<p>Fees:<br><b>%s</b> PIV<p>" % str(round(int(tx_fee) / 1e8, 8))
+            # messageText += f"From bip32_path: <b>{bip32_path}</b><br><br>"
+            self.messageText += f"<p>Payment to:<br><b>{dest_address}</b></p>"
+            self.messageText += f"<p>Net amount:<br><b>{round(self.amount / 1e8, 8)}</b> PIV</p>"
+            self.messageText += f"<p>Fees:<br><b>{round(int(tx_fee) / 1e8, 8)}</b> PIV<p>"
             messageText = self.messageText + "Signature Progress: 0 %"
             self.mBox2.setText(messageText)
             self.mBox2.setIconPixmap(caller.ledgerImg.scaledToHeight(200, Qt.SmoothTransformation))
@@ -215,23 +211,15 @@ class LedgerApi(QObject):
     @process_ledger_exceptions
     def scanForAddress(self, hwAcc, spath, intExt=0, isTestnet=False):
         with self.lock:
-            if not isTestnet:
-                curr_path = MPATH + "%d'/%d/%d" % (hwAcc, intExt, spath)
-                curr_addr = self.chip.getWalletPublicKey(curr_path).get('address')[12:-2]
-            else:
-                curr_path = MPATH_TESTNET + "%d'/%d/%d" % (hwAcc, intExt, spath)
-                pubkey = compress_public_key(self.chip.getWalletPublicKey(curr_path).get('publicKey')).hex()
-                curr_addr = pubkey_to_address(pubkey, isTestnet)
+            curr_path = (MPATH_TESTNET if isTestnet else MPATH) + f"{hwAcc}'/{intExt}/{spath}"
+            curr_addr = self.chip.getWalletPublicKey(curr_path).get('address')[12:-2] if not isTestnet else pubkey_to_address(compress_public_key(self.chip.getWalletPublicKey(curr_path).get('publicKey')).hex(), isTestnet)
 
         return curr_addr
 
     @process_ledger_exceptions
     def scanForPubKey(self, account, spath, isTestnet=False):
-        hwpath = "%d'/0/%d" % (account, spath)
-        if isTestnet:
-            curr_path = MPATH_TESTNET + hwpath
-        else:
-            curr_path = MPATH + hwpath
+        hwpath = f"{account}'/0/{spath}"
+        curr_path = (MPATH_TESTNET if isTestnet else MPATH) + hwpath
 
         with self.lock:
             nodeData = self.chip.getWalletPublicKey(curr_path)
@@ -240,10 +228,7 @@ class LedgerApi(QObject):
 
     @process_ledger_exceptions
     def signMess(self, caller, hwpath, message, isTestnet=False):
-        if isTestnet:
-            path = MPATH_TESTNET + hwpath
-        else:
-            path = MPATH + hwpath
+        path = (MPATH_TESTNET if isTestnet else MPATH) + hwpath
         # Ledger doesn't accept characters other that ascii printable:
         # https://ledgerhq.github.io/btchip-doc/bitcoin-technical.html#_sign_message
         message = message.encode('ascii', 'ignore')
@@ -251,9 +236,11 @@ class LedgerApi(QObject):
 
         # Connection pop-up
         mBox = QMessageBox(caller)
-        warningText = "Another application (such as Ledger Wallet app) has probably taken over "
-        warningText += "the communication with the Ledger device.<br><br>To continue, close that application and "
-        warningText += "click the <b>Retry</b> button.\nTo cancel, click the <b>Abort</b> button"
+        warningText = (
+            "Another application (such as Ledger Wallet app) has probably taken over "
+            "the communication with the Ledger device.<br><br>To continue, close that application and "
+            "click the <b>Retry</b> button.\nTo cancel, click the <b>Abort</b> button"
+        )
         mBox.setText(warningText)
         mBox.setWindowTitle("WARNING")
         mBox.setStandardButtons(QMessageBox.Retry | QMessageBox.Abort)
@@ -274,8 +261,7 @@ class LedgerApi(QObject):
 
             printOK('Signing Message')
             self.mBox = QMessageBox(caller.ui)
-            messageText = "Check display of your hardware device\n\n- message hash:\n\n%s\n\n-path:\t%s\n" % (
-                message_sha, path)
+            messageText = f"Check display of your hardware device\n\n- message hash:\n\n{message_sha}\n\n-path:\t{path}\n"
             self.mBox.setText(messageText)
             self.mBox.setIconPixmap(caller.ledgerImg.scaledToHeight(200, Qt.SmoothTransformation))
             self.mBox.setWindowTitle("CHECK YOUR LEDGER")
@@ -314,13 +300,13 @@ class LedgerApi(QObject):
                         printOK("Message signed")
                         sig1 = work.hex()
                     else:
-                        printDbg('client.signMessageSign() returned invalid response (code 3): ' + self.signature.hex())
+                        printDbg(f'client.signMessageSign() returned invalid response (code 3): {self.signature.hex()}')
                         sig1 = "None"
                 else:
-                    printDbg('client.signMessageSign() returned invalid response (code 2): ' + self.signature.hex())
+                    printDbg(f'client.signMessageSign() returned invalid response (code 2): {self.signature.hex()}')
                     sig1 = "None"
             else:
-                printDbg('client.signMessageSign() returned invalid response (code 1): ' + self.signature.hex())
+                printDbg(f'client.signMessageSign() returned invalid response (code 1): {self.signature.hex()}')
                 sig1 = "None"
         else:
             printOK("Signature refused by the user")
@@ -377,13 +363,13 @@ class LedgerApi(QObject):
         self.mBox2.accept()
 
         if self.tx_raw is not None:
-            # Signal to be catched by FinishSend on TabRewards / dlg_sewwpAll
+            # Signal to be caught by FinishSend on TabRewards / dlg_sewwpAll
             self.sigTxdone.emit(self.tx_raw, str(round(self.amount / 1e8, 8)))
         else:
             printOK("Transaction refused by the user")
             self.sigTxabort.emit()
 
     def updateSigProgress(self, percent):
-        messageText = self.messageText + "Signature Progress: <b style='color:red'>" + str(percent) + " %</b>"
+        messageText = f"{self.messageText}Signature Progress: <b style='color:red'>{percent} %</b>"
         self.mBox2.setText(messageText)
         QApplication.processEvents()

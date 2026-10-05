@@ -10,10 +10,10 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QGridLayo
 from misc import myPopUp_sb
 
 
-class PinMatrix_dlg(QDialog):
+class PinMatrixDlg(QDialog):
     def __init__(self, text='', title='Enter PIN', fHideBtns=True):
-        QDialog.__init__(self)
-        self.text = text if text != '' else "Check device and enter PIN"
+        super().__init__()
+        self.text = text if text else "Check device and enter PIN"
         self.hideBtns = fHideBtns
         self.pin = ''
         self.setWindowTitle(title)
@@ -46,7 +46,7 @@ class PinMatrix_dlg(QDialog):
             myPopUp_sb(self, "warn", 'Wrong PIN!', text)
 
     def setupUI(self):
-        Ui_pinMatrixDlg.setupUi(self, self)
+        UiPinMatrixDlg.setupUi(self, self)
         # Connect buttons matrix
         for i in range(9):
             self.btn[i].clicked.connect(lambda _, b=i + 1: self.btn_clicked(str(b)))
@@ -56,14 +56,14 @@ class PinMatrix_dlg(QDialog):
         self.btn_cancel.clicked.connect(self.onCancel)
 
 
-class Ui_pinMatrixDlg(object):
+class UiPinMatrixDlg:
     def setupUi(self, PinMatrixDlg):
         PinMatrixDlg.setModal(True)
         layout = QVBoxLayout(PinMatrixDlg)
         layout.setContentsMargins(10, 8, 10, 10)
 
         # Header
-        title = QLabel("<b>%s</b>" % PinMatrixDlg.text)
+        title = QLabel(f"<b>{PinMatrixDlg.text}</b>")
         title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title)
 

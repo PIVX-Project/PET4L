@@ -14,17 +14,14 @@ from misc import printOK, printDbg
 from time import sleep
 from trezorClient import TrezorApi
 
-
 def check_api_init(func):
     def func_int(*args, **kwargs):
         hwDevice = args[0]
         if hwDevice.api is None:
-            logging.warning("%s: hwDevice.api is None" % func.__name__)
+            logging.warning(f"{func.__name__}: hwDevice.api is None")
             raise Exception("HW device: client not initialized")
         return func(*args, **kwargs)
-
     return func_int
-
 
 class HWdevice(QObject):
     # signal: sig1 (thread) is done - emitted by signMessageFinish
@@ -32,13 +29,13 @@ class HWdevice(QObject):
 
     def __init__(self, main_wnd, *args, **kwargs):
         printDbg("HW: Initializing Class...")
-        QObject.__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.main_wnd = main_wnd
         self.api = None
         printOK("HW: Class initialized")
 
     def initDevice(self, hw_index):
-        printDbg("HW: initializing hw device with index %d" % hw_index)
+        printDbg(f"HW: initializing hw device with index {hw_index}")
         if hw_index >= len(HW_devices):
             raise Exception("Invalid HW index")
 
@@ -53,7 +50,7 @@ class HWdevice(QObject):
         self.api.initDevice()
         self.sig1done = self.api.sig1done
         self.api.sig_disconnected.connect(self.main_wnd.clearHWstatus)
-        printOK("HW: hw device with index %d initialized" % hw_index)
+        printOK(f"HW: hw device with index {hw_index} initialized")
 
     @check_api_init
     def clearDevice(self):
@@ -68,14 +65,15 @@ class HWdevice(QObject):
     @check_api_init
     def getStatus(self):
         printDbg("HW: checking device status...")
-        printOK("Status: %d" % self.api.status)
+        printOK(f"Status: {self.api.status}")
         return self.api.model, self.api.status, self.api.messages[self.api.status]
 
-    def prepare_transfer_tx(self, caller, bip32_path,  utxos_to_spend, dest_address, tx_fee, isTestnet=False):
+    def prepare_transfer_tx(self, caller, bip32_path, utxos_to_spend, dest_address, tx_fee, isTestnet=False):
         rewardsArray = []
-        mnode = {}
-        mnode['path'] = bip32_path
-        mnode['utxos'] = utxos_to_spend
+        mnode = {
+            'path': bip32_path,
+            'utxos': utxos_to_spend
+        }
         rewardsArray.append(mnode)
         self.prepare_transfer_tx_bulk(caller, rewardsArray, dest_address, tx_fee, isTestnet)
 
@@ -86,17 +84,17 @@ class HWdevice(QObject):
 
     @check_api_init
     def scanForAddress(self, hwAcc, spath, intExt=0, isTestnet=False):
-        printOK("HW: Scanning for Address n. %d on account n. %d" % (spath, hwAcc))
+        printOK(f"HW: Scanning for Address n. {spath} on account n. {hwAcc}")
         return self.api.scanForAddress(hwAcc, spath, intExt, isTestnet)
 
     @check_api_init
     def scanForBip32(self, account, address, starting_spath=0, spath_count=10, isTestnet=False):
-        printOK("HW: Scanning for Bip32 path of address: %s" % address)
+        printOK(f"HW: Scanning for Bip32 path of address: {address}")
         found = False
         spath = -1
 
         for i in range(starting_spath, starting_spath + spath_count):
-            printDbg("HW: checking path... %d'/0/%d" % (account, i))
+            printDbg(f"HW: checking path... {account}'/0/{i}")
             curr_addr = self.api.scanForAddress(account, i, isTestnet)
 
             if curr_addr == address:
@@ -106,11 +104,11 @@ class HWdevice(QObject):
 
             sleep(0.01)
 
-        return (found, spath)
+        return found, spath
 
     @check_api_init
     def scanForPubKey(self, account, spath, isTestnet=False):
-        printOK("HW: Scanning for PubKey of address n. %d on account n. %d" % (spath, account))
+        printOK(f"HW: Scanning for PubKey of address n. {spath} on account n. {account}")
         return self.api.scanForPubKey(account, spath, isTestnet)
 
     @check_api_init

@@ -12,7 +12,7 @@ from PyQt5.Qt import QSizePolicy
 
 class GuiHeader(QWidget):
     def __init__(self, caller, *args, **kwargs):
-        QWidget.__init__(self)
+        super().__init__(*args, **kwargs)
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         # --- 1) Check Box
@@ -28,7 +28,7 @@ class GuiHeader(QWidget):
         self.button_checkRpc.setToolTip("try to connect to RPC server")
         self.centralBox.addWidget(self.button_checkRpc, 0, 2)
         self.rpcLed = QLabel()
-        self.rpcLed.setToolTip("%s" % caller.rpcStatusMess)
+        self.rpcLed.setToolTip(f"{caller.rpcStatusMess}")
         self.rpcLed.setPixmap(caller.ledGrayH_icon)
         self.centralBox.addWidget(self.rpcLed, 0, 3)
         self.lastPingBox = QWidget()
@@ -65,7 +65,7 @@ class GuiHeader(QWidget):
         self.button_checkHw.setToolTip("try to connect to Hardware Wallet")
         self.centralBox.addWidget(self.button_checkHw, 1, 2)
         self.hwLed = QLabel()
-        self.hwLed.setToolTip("status: %s" % caller.hwStatusMess)
+        self.hwLed.setToolTip(f"status: {caller.hwStatusMess}")
         self.hwLed.setPixmap(caller.ledGrayH_icon)
         self.centralBox.addWidget(self.hwLed, 1, 3)
         layout.addLayout(self.centralBox)

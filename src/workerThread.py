@@ -13,7 +13,7 @@ from PyQt5.QtCore import QThread
 from misc import printError
 
 
-class CtrlObject(object):
+class CtrlObject:
     pass
 
 
@@ -23,7 +23,7 @@ class WorkerThread(QThread):
     """
 
     def __init__(self, worker_fun, worker_fun_args):
-        QThread.__init__(self)
+        super().__init__()
         self.worker_fun = worker_fun
         self.worker_fun_args = worker_fun_args
         # prepare control object passed to external thread function
@@ -44,4 +44,5 @@ class WorkerThread(QThread):
             self.worker_result = self.worker_fun(self.ctrl_obj, *self.worker_fun_args)
         except Exception as e:
             printError("worker thread", "run", str(e))
+            self.worker_exception = e
             self.stop()
