@@ -283,6 +283,8 @@ def readCacheSettings():
         cache["console_hidden"] = settings.value('cache_consoleHidden', DefaultCache["console_hidden"], type=bool)
         cache["selectedHW_index"] = settings.value('cache_HWindex', DefaultCache["selectedHW_index"], type=int)
         cache["selectedRPC_index"] = settings.value('cache_RPCindex', DefaultCache["selectedRPC_index"], type=int)
+        cache["selectedExplorer_mainnet"] = settings.value('cache_ExplorerMainnet', DefaultCache["selectedExplorer_mainnet"], type=str)
+        cache["selectedExplorer_testnet"] = settings.value('cache_ExplorerTestnet', DefaultCache["selectedExplorer_testnet"], type=str)
         cache["isTestnetRPC"] = settings.value('cache_isTestnetRPC', DefaultCache["isTestnetRPC"], type=bool)
         cache["hwAcc"] = settings.value('cache_hwAcc', DefaultCache["hwAcc"], type=int)
         cache["spathFrom"] = settings.value('cache_spathFrom', DefaultCache["spathFrom"], type=int)
@@ -309,6 +311,8 @@ def saveCacheSettings(cache):
     settings.setValue('cache_consoleHidden', cache.get('console_hidden'))
     settings.setValue('cache_HWindex', cache.get('selectedHW_index'))
     settings.setValue('cache_RPCindex', cache.get('selectedRPC_index'))
+    settings.setValue('cache_ExplorerMainnet', cache.get('selectedExplorer_mainnet'))
+    settings.setValue('cache_ExplorerTestnet', cache.get('selectedExplorer_testnet'))
     settings.setValue('cache_isTestnetRPC', cache.get('isTestnetRPC'))
     settings.setValue('cache_hwAcc', cache.get('hwAcc'))
     settings.setValue('cache_spathFrom', cache.get('spathFrom'))
@@ -328,11 +332,16 @@ def sec_to_time(seconds):
 
 def timeThis(function, *args):
     try:
-        start = time.clock()
+        # time.clock() was removed in Python 3.8; perf_counter is the
+        # documented replacement for measuring elapsed wall-clock time.
+        start = time.perf_counter()
         val = function(*args)
-        end = time.clock()
+        end = time.perf_counter()
         return val, (end - start)
-    except Exception:
+    except Exception as e:
+        # Callers treat None as "call failed", but swallowing silently once hid
+        # a working RPC server reporting itself as unreachable. Leave a trace.
+        printException(getCallerName(True), getFunctionName(True), "timeThis failed:", str(e))
         return None, None
 
 

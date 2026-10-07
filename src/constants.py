@@ -31,6 +31,13 @@ user_dir = os.path.join(home_dir, APPDATA_DIRNAME)
 log_File = os.path.join(user_dir, 'debug.log')
 database_File = os.path.join(user_dir, 'application.db')
 
+# Default explorers (url). Defined here so DefaultCache can reference them.
+DEFAULT_MAINNET_EXPLORER = "https://explorer.pivx.org/"
+# testnet.duddino.com fails the TLS handshake (SSLError under requests/OpenSSL
+# 3.6.3), so it is as unreachable as the dropped mainnet hosts. This is the
+# testnet6 rusty-blox instance.
+DEFAULT_TESTNET_EXPLORER = "https://testnet-explorer.liquid369.wtf/"
+
 DefaultCache = {
     "lastAddress": "",
     "window_width": starting_width,
@@ -38,6 +45,10 @@ DefaultCache = {
     "splitter_x": 342,
     "splitter_y": 133,
     "console_hidden": False,
+    # Selected explorer is stored per network, keyed by URL (stable across
+    # reordering), so switching networks never remaps to a different server.
+    "selectedExplorer_mainnet": DEFAULT_MAINNET_EXPLORER,
+    "selectedExplorer_testnet": DEFAULT_TESTNET_EXPLORER,
     "selectedHW_index": 0,
     "selectedRPC_index": 0,
     "isTestnetRPC": False,
@@ -52,6 +63,14 @@ trusted_RPC_Servers = [
     ["https", "latvia.fuzzbawls.pw:8080", "spmtUser", "8X88u7TuefPm7mQaJY52"],
     ["https", "charlotte.fuzzbawls.pw:8080", "spmtUser", "ZyD936tm9dvqmMP8A777"]]
 
+# Default explorer rows (url, isTestnet, isCustom).
+# Plain-HTTP-reachable Blockbook instances only: explorer.duddino.com and
+# zkbitcoin.com answer every API request with a Cloudflare 403. Defaults
+# dropped here are pruned from the DB on startup; custom entries are kept.
+trusted_explorers = [
+    [DEFAULT_MAINNET_EXPLORER, False, False],
+    [DEFAULT_TESTNET_EXPLORER, True, False]
+]
 
 HW_devices = [
     # (model name, api index)
