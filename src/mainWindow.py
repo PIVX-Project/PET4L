@@ -360,10 +360,10 @@ class MainWindow(QWidget):
             self.header.lastPingBox.setHidden(True)
         else:
             self.header.lastPingBox.setHidden(False)
-            if self.rpcResponseTime > 2:
+            if self.rpcResponseTime is not None and self.rpcResponseTime > 2:
                 color = "red"
                 self.header.lastPingIcon.setPixmap(self.connRed_icon)
-            elif self.rpcResponseTime > 1:
+            elif self.rpcResponseTime is not None and self.rpcResponseTime > 1:
                 color = "orange"
                 self.header.lastPingIcon.setPixmap(self.connOrange_icon)
             else:
@@ -442,7 +442,7 @@ class MainWindow(QWidget):
             return
 
         rpcResponseTime = None
-        if r_time1 is not None and r_time2 != 0:
+        if r_time1 is not None and r_time2 is not None:
             rpcResponseTime = round((r_time1 + r_time2) / 2, 3)
 
         # Do not update status if the user has selected a different server since the start of updateRPCStatus()

@@ -328,9 +328,9 @@ def sec_to_time(seconds):
 
 def timeThis(function, *args):
     try:
-        start = time.clock()
+        start = time.perf_counter()
         val = function(*args)
-        end = time.clock()
+        end = time.perf_counter()
         return val, (end - start)
     except Exception:
         return None, None
